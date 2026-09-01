@@ -1,3 +1,4 @@
+require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
 const connectDB = require("./config/db"); // Import the bridge
@@ -8,7 +9,7 @@ app.use(cors());
 app.use(express.json());
 
 // Connect to the database
-//connectDB();
+connectDB();
 
 // ---> THIS IS THE NEW PART THAT CONNECTS YOUR ROUTES <---
 const authRoutes = require("./routes/auth");
