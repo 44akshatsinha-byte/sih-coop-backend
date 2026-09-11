@@ -4,6 +4,9 @@
 
 :root {
   color-scheme: light;
+  --clr-forest: #2C5F4A;
+  --clr-page: #F3EFE6;
+  --clr-ink: #3A5F5F;
 }
 
 html, body, #root {
@@ -12,11 +15,13 @@ html, body, #root {
 
 body {
   margin: 0;
-  background: #F3EFE6;
+  background: linear-gradient(135deg, #F3EFE6 0%, #e8f0eb 50%, #F3EFE6 100%);
+  background-attachment: fixed;
   color: #3A5F5F;
   font-family: "Segoe UI", system-ui, sans-serif;
 }
 
+/* ─── Leaflet Map ─── */
 .leaflet-container {
   height: 100%;
   width: 100%;
@@ -24,3 +29,172 @@ body {
   background: #e7e2d6;
   z-index: 0;
 }
+
+/* ─── Gradient Text ─── */
+.gradient-text {
+  background: linear-gradient(135deg, #2C5F4A, #1a8a5a, #3A5F5F);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.gradient-text-gold {
+  background: linear-gradient(135deg, #b8860b, #daa520, #b8860b);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* ─── Shimmer Loader ─── */
+.shimmer {
+  background: linear-gradient(90deg, #e8e2d8 25%, #f5f0e8 50%, #e8e2d8 75%);
+  background-size: 200% 100%;
+  animation: shimmer-anim 1.5s infinite;
+}
+
+@keyframes shimmer-anim {
+  0%   { background-position: -200% 0; }
+  100% { background-position:  200% 0; }
+}
+
+/* ─── Glass Morphism ─── */
+.glass {
+  background: rgba(243, 239, 230, 0.75);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(209, 202, 188, 0.6);
+}
+
+/* ─── Hero gradient banner ─── */
+.hero-gradient {
+  background: linear-gradient(135deg, #1a3d30 0%, #2C5F4A 40%, #3a7a5f 70%, #4a9970 100%);
+}
+
+/* ─── Animated border glow ─── */
+.glow-border {
+  box-shadow: 0 0 0 2px rgba(44, 95, 74, 0.15), 0 4px 24px rgba(44, 95, 74, 0.12);
+  transition: box-shadow 0.3s ease;
+}
+
+.glow-border:hover {
+  box-shadow: 0 0 0 2px rgba(44, 95, 74, 0.35), 0 8px 32px rgba(44, 95, 74, 0.22);
+}
+
+/* ─── Card hover lift ─── */
+.card-hover {
+  transition: transform 0.25s cubic-bezier(0.34,1.56,0.64,1), box-shadow 0.25s ease;
+}
+
+.card-hover:hover {
+  transform: translateY(-3px) scale(1.01);
+  box-shadow: 0 12px 36px rgba(44, 95, 74, 0.18);
+}
+
+/* ─── Stat counter pulse ring ─── */
+.stat-ring {
+  position: relative;
+}
+
+.stat-ring::before {
+  content: "";
+  position: absolute;
+  inset: -4px;
+  border-radius: 50%;
+  border: 2px solid rgba(44, 95, 74, 0.3);
+  animation: ring-pulse 2s ease-in-out infinite;
+}
+
+@keyframes ring-pulse {
+  0%, 100% { transform: scale(1); opacity: 0.6; }
+  50%       { transform: scale(1.12); opacity: 0; }
+}
+
+/* ─── Progress bar shimmer ─── */
+.progress-bar {
+  position: relative;
+  overflow: hidden;
+  border-radius: 999px;
+}
+
+.progress-bar::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.4) 50%, transparent 100%);
+  animation: progress-shimmer 1.8s ease-in-out infinite;
+}
+
+@keyframes progress-shimmer {
+  0%   { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+/* ─── Particle orbs (decorative background dots) ─── */
+.orb {
+  position: absolute;
+  border-radius: 50%;
+  pointer-events: none;
+  filter: blur(40px);
+  opacity: 0.18;
+  animation: orb-drift 8s ease-in-out infinite;
+}
+
+@keyframes orb-drift {
+  0%, 100% { transform: translateY(0) translateX(0); }
+  33%       { transform: translateY(-20px) translateX(10px); }
+  66%       { transform: translateY(10px) translateX(-10px); }
+}
+
+/* ─── Badge pulse ─── */
+.badge-pulse {
+  animation: badge-pop 0.5s cubic-bezier(0.34,1.56,0.64,1) both;
+}
+
+@keyframes badge-pop {
+  0%   { transform: scale(0); opacity: 0; }
+  60%  { transform: scale(1.15); opacity: 1; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+/* ─── Staggered animation helpers ─── */
+.stagger-1 { animation-delay: 0.05s; }
+.stagger-2 { animation-delay: 0.10s; }
+.stagger-3 { animation-delay: 0.15s; }
+.stagger-4 { animation-delay: 0.20s; }
+.stagger-5 { animation-delay: 0.25s; }
+.stagger-6 { animation-delay: 0.30s; }
+
+/* ─── Button press effect ─── */
+.btn-press {
+  transition: transform 0.1s ease, box-shadow 0.1s ease;
+}
+
+.btn-press:active {
+  transform: scale(0.96);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+}
+
+/* ─── Typing dots ─── */
+.typing-dot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+  animation: typing 1.2s ease-in-out infinite;
+}
+
+.typing-dot:nth-child(2) { animation-delay: 0.2s; }
+.typing-dot:nth-child(3) { animation-delay: 0.4s; }
+
+@keyframes typing {
+  0%, 80%, 100% { transform: scale(0.8); opacity: 0.5; }
+  40%            { transform: scale(1.2); opacity: 1; }
+}
+
+/* ─── Scrollbar styling ─── */
+::-webkit-scrollbar        { width: 6px; height: 6px; }
+::-webkit-scrollbar-track  { background: #e8e2d8; border-radius: 3px; }
+::-webkit-scrollbar-thumb  { background: #b5b0a0; border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: #2C5F4A; }
+

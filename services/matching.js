@@ -1,4 +1,6 @@
 const { haversineKm } = require("./geo");
+const { rankWithTopsis } = require("./algorithms/topsis");
+const { rankWithEquity } = require("./algorithms/equity");
 
 /**
  * Explainable matching weights. They sum to 1.0.
@@ -200,12 +202,32 @@ function scoreCandidate({ booking, worker }) {
   };
 }
 
-function rankWorkers(booking, workers, limit = 5) {
+function getGovernmentBadges(worker) {
+  const badges = [];
+  if (worker.isVerified) {
+    badges.push({ id: "eshram", label: "e-Shram Verified", color: "emerald" });
+  }
+  const traditionalSkills = ["carpentry", "plumbing", "painting", "domestic", "gardening"];
+  const hasTraditionalCraft = (worker.skills || []).some((s) => traditionalSkills.includes(normalizeSkill(s)));
+  if (hasTraditionalCraft) {
+    badges.push({ id: "vishwakarma", label: "PM Vishwakarma Artisan", color: "amber" });
+  }
+  if ((worker.rating || 0) >= 4.5 && (worker.ratingCount || 0) >= 3) {
+    badges.push({ id: "master", label: "Master Craftsman", color: "blue" });
+  }
+  if ((worker.completedJobs || 0) < 5) {
+    badges.push({ id: "equity_priority", label: "Fair Income Priority", color: "purple" });
+  }
+  return badges;
+}
+
+function rankWorkers(booking, workers, limit = 5, mode = "formula") {
   const required = uniqueNormalized(booking.requiredSkills);
   const scored = workers
     .filter((w) => Number.isFinite(w.latitude) && Number.isFinite(w.longitude))
     .map((worker) => {
       const result = scoreCandidate({ booking, worker });
+      const badges = getGovernmentBadges(worker);
       return {
         workerId: worker._id?.toString?.() || worker.id,
         name: worker.name,
@@ -219,18 +241,45 @@ function rankWorkers(booking, workers, limit = 5) {
         isAvailable: Boolean(worker.isAvailable),
         latitude: worker.latitude,
         longitude: worker.longitude,
+        governmentBadges: badges,
         ...result
       };
     })
     .filter((row) => {
       if (required.length === 0) return true;
       return row.breakdown.skill.componentScore > 0;
-    })
-    .sort((a, b) => b.score - a.score)
-    .slice(0, limit)
-    .map((row, index) => ({ rank: index + 1, ...row }));
+    });
 
-  return scored;
+  let ranked = [];
+  const selectedMode = String(mode).toLowerCase();
+
+  if (selectedMode === "topsis") {
+    ranked = rankWithTopsis(scored);
+  } else if (selectedMode === "equity") {
+    ranked = rankWithEquity(scored);
+  } else if (selectedMode === "proximity") {
+    ranked = [...scored].sort((a, b) => a.distanceKm - b.distanceKm);
+  } else if (selectedMode === "hybrid") {
+    // Government Consensus: 40% TOPSIS Pareto closeness + 30% Equity Boost + 30% Formula Score
+    const topsisScored = rankWithTopsis(scored);
+    const equityScored = rankWithEquity(topsisScored);
+    ranked = equityScored.map((c) => {
+      const topsis = c.topsisScore ?? c.score;
+      const equity = c.equityScore ?? c.score;
+      const hybridScore = Number((0.40 * topsis + 0.30 * equity + 0.30 * c.score).toFixed(2));
+      return {
+        ...c,
+        score: hybridScore,
+        hybridScore,
+        algorithmNote: `Government Consensus Blend (40% TOPSIS, 30% Equity Balancing, 30% Proximity/Skill)`
+      };
+    }).sort((a, b) => b.score - a.score);
+  } else {
+    // Default standard formula
+    ranked = scored.sort((a, b) => b.score - a.score);
+  }
+
+  return ranked.slice(0, limit).map((row, index) => ({ rank: index + 1, ...row }));
 }
 
 function formulaDescription() {
@@ -238,6 +287,38 @@ function formulaDescription() {
     equation:
       "score = 100 × (0.35×distance + 0.30×skill + 0.20×rating + 0.15×availability) + urgencyBonus",
     weights: WEIGHTS,
+    supportedAlgorithms: [
+      {
+        id: "hybrid",
+        name: "Government Consensus Blend",
+        description: "Equitably weights Pareto efficiency (TOPSIS 40%), worker welfare (Equity 30%), and geo-skill proximity (30%).",
+        idealFor: "Public cooperative societies and inclusive civic dispatch"
+      },
+      {
+        id: "topsis",
+        name: "TOPSIS Multi-Criteria Decision Analysis",
+        description: "Evaluates geometric distance to positive-ideal and negative-ideal solutions across 5 criteria.",
+        idealFor: "Objective, mathematically optimal tender and task allocation"
+      },
+      {
+        id: "equity",
+        name: "Affirmative Income Equity & Anti-Monopoly",
+        description: "Crumbs-to-crust distribution boosting under-served and new artisans while penalizing monopolistic gig-hoarding.",
+        idealFor: "e-Shram and PM Vishwakarma affirmative action"
+      },
+      {
+        id: "proximity",
+        name: "Emergency Proximity-First",
+        description: "Minimizes transit time and carbon footprint via geodesic Haversine distance.",
+        idealFor: "Urgent leaks, electrical fires, and medical emergencies"
+      },
+      {
+        id: "ml",
+        name: "Random Forest Machine Learning Ranker",
+        description: "Scikit-Learn trained ensemble predicting match quality from historical gig completions.",
+        idealFor: "Data-rich historical optimization"
+      }
+    ],
     distance: {
       method: "Haversine (km)",
       normal: `score = max(0, 1 - km/${MAX_KM_NORMAL})`,
@@ -261,5 +342,8 @@ module.exports = {
   skillMatchScore,
   scoreCandidate,
   rankWorkers,
-  formulaDescription
+  formulaDescription,
+  rankWithTopsis,
+  rankWithEquity,
+  getGovernmentBadges
 };

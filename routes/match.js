@@ -96,7 +96,9 @@ router.post("/", authMiddleware, requireRole("customer", "admin"), async (req, r
     }
 
     const topN = Math.min(10, Math.max(1, parseInt(limit, 10) || 5));
-    const rankMode = String(mode || "formula").toLowerCase() === "ml" ? "ml" : "formula";
+    const validModes = ["hybrid", "topsis", "equity", "proximity", "formula", "ml"];
+    const inputMode = String(mode || "hybrid").toLowerCase();
+    const rankMode = validModes.includes(inputMode) ? inputMode : "hybrid";
     const availableOnly = String(req.body.availableOnly || "true").toLowerCase() !== "false";
 
     const workerFilter = {
@@ -119,7 +121,7 @@ router.post("/", authMiddleware, requireRole("customer", "admin"), async (req, r
       urgency: bookingUrgency
     };
 
-    const ranked = rankWorkers(booking, workers.map(toWorkerPayload), Math.max(topN, 20));
+    const ranked = rankWorkers(booking, workers.map(toWorkerPayload), Math.max(topN, 20), rankMode);
 
     let candidates = ranked.slice(0, topN);
     let mlMeta = { used: false, modelLoaded: modelExists() };

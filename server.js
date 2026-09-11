@@ -9,6 +9,7 @@ const gigRoutes = require("./routes/gigs");
 const paymentRoutes = require("./routes/payments");
 const matchRoutes = require("./routes/match");
 const adminRoutes = require("./routes/admin");
+const aiRoutes = require("./routes/ai");
 
 const app = express();
 
@@ -79,6 +80,11 @@ app.get("/api/docs", (req, res) => {
         "PUT /admin/workers/:id/verify": "Set verification status",
         "GET /admin/flagged-reviews": "Open/escalated review flags",
         "PUT /admin/flagged-reviews/:gigId": "dismiss or escalate"
+      },
+      ai: {
+        "POST /ai/estimate": "AI Dynamic Fair-Pricing Bridge & NLP Auto-Tagger (English/Hindi)",
+        "POST /ai/auto-tag": "Extract category, urgency, and suggested draft from task description",
+        "GET /ai/taxonomy": "Reference of standardized trades, skills, and base scheduled rates"
       }
     },
     auth: "Bearer JWT in Authorization header (except public endpoints)"
@@ -90,6 +96,7 @@ app.use("/api/gigs", gigRoutes);
 app.use("/api/payments", paymentRoutes);
 app.use("/api/match-worker", matchRoutes);
 app.use("/api/admin", adminRoutes);
+app.use("/api/ai", aiRoutes);
 
 app.get("/", (req, res) => {
   res.json({ 

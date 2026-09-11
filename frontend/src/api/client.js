@@ -83,11 +83,19 @@ export const gigsApi = {
   submitProposal: (id, body) =>
     api(`/api/gigs/${id}/proposals`, { method: "POST", body }),
   acceptProposal: (id, proposalId) =>
-    api(`/api/gigs/${id}/proposals/${proposalId}/accept`, { method: "PUT" })
+    api(`/api/gigs/${id}/proposals/${proposalId}/accept`, { method: "PUT" }),
+  autoDispatch: (id, algorithm = "hybrid") =>
+    api(`/api/gigs/${id}/auto-dispatch`, { method: "POST", body: { algorithm } })
 };
 
 export const matchApi = {
   rank: (body) => api("/api/match-worker", { method: "POST", body })
+};
+
+export const aiApi = {
+  estimate: (body) => api("/api/ai/estimate", { method: "POST", body, auth: false }),
+  autoTag: (body) => api("/api/ai/auto-tag", { method: "POST", body, auth: false }),
+  taxonomy: () => api("/api/ai/taxonomy", { auth: false })
 };
 
 export const paymentsApi = {

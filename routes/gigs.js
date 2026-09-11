@@ -4,8 +4,9 @@ const Gig = require("../models/gig");
 const User = require("../models/user");
 const CooperativePool = require("../models/CooperativePool");
 const { authMiddleware, requireRole } = require("../middleware/authMiddleware");
-const { parseUrgency, parseLocationPoint } = require("../services/location");
+const { parseUrgency, parseLocationPoint, coordsFromPoint } = require("../services/location");
 const { evaluateReviewFlag } = require("../services/reviewFlagger");
+const { rankWorkers } = require("../services/matching");
 
 const COOPERATIVE_SPLIT = 0.15;
 const WORKER_SPLIT = 0.85;
@@ -862,6 +863,10 @@ router.put("/:id/complete", authMiddleware, async (req, res) => {
       .populate("workerDetails", "name email avatar skills rating ratingCount isVerified completedJobs")
       .populate("proposals.worker", "name email avatar skills phone isVerified rating ratingCount completedJobs");
 
+    const welfareInsurance = Math.round(cooperativeAmount * 0.60 * 100) / 100;
+    const toolMicrocredit = Math.round(cooperativeAmount * 0.25 * 100) / 100;
+    const unionReserve = Math.round((cooperativeAmount - welfareInsurance - toolMicrocredit) * 100) / 100;
+
     res.json({
       success: true,
       message: "Gig completed and payment distributed successfully!",
@@ -871,6 +876,11 @@ router.put("/:id/complete", authMiddleware, async (req, res) => {
       equipmentCost,
       workerAmount,
       cooperativeAmount,
+      cooperativeWelfareAllocations: {
+        healthAndAccidentInsurance: welfareInsurance,
+        toolSubsidyFund: toolMicrocredit,
+        unionReserve
+      },
       data: completedGig
     });
   } catch (error) {
@@ -888,6 +898,91 @@ router.put("/:id/complete", authMiddleware, async (req, res) => {
     });
   } finally {
     session.endSession();
+  }
+});
+
+router.post("/:id/auto-dispatch", authMiddleware, requireRole("customer", "admin"), async (req, res) => {
+  try {
+    const gig = await Gig.findById(req.params.id);
+    if (!gig) {
+      return res.status(404).json({ success: false, message: "Gig not found" });
+    }
+    if (gig.status !== "pending") {
+      return res.status(400).json({ success: false, message: `Gig is not pending (current: ${gig.status})` });
+    }
+    if (gig.customer.toString() !== req.user.id && req.user.role !== "admin") {
+      return res.status(403).json({ success: false, message: "Not authorized to auto-dispatch this gig" });
+    }
+
+    const { algorithm = "hybrid" } = req.body || {};
+    const coords = coordsFromPoint(gig.locationPoint);
+    const bookingLat = coords ? coords.latitude : 28.6139;
+    const bookingLng = coords ? coords.longitude : 77.2090;
+    const categorySkill = gig.category && gig.category !== "general" ? [gig.category] : [];
+
+    const workers = await User.find({
+      role: "worker",
+      isAvailable: true,
+      latitude: { $ne: null },
+      longitude: { $ne: null }
+    }).select("name avatar skills phone isVerified latitude longitude rating ratingCount isAvailable completedJobs");
+
+    if (!workers.length) {
+      return res.status(404).json({
+        success: false,
+        message: "No available workers currently found in the cooperative pool"
+      });
+    }
+
+    const booking = {
+      latitude: bookingLat,
+      longitude: bookingLng,
+      requiredSkills: categorySkill,
+      urgency: gig.urgency || "normal"
+    };
+
+    const workerPayloads = workers.map((u) => ({
+      _id: u._id,
+      name: u.name,
+      avatar: u.avatar || "",
+      skills: u.skills,
+      phone: u.phone,
+      isVerified: u.isVerified,
+      latitude: u.latitude,
+      longitude: u.longitude,
+      rating: u.rating,
+      ratingCount: u.ratingCount,
+      isAvailable: u.isAvailable,
+      completedJobs: u.completedJobs
+    }));
+
+    const ranked = rankWorkers(booking, workerPayloads, 5, algorithm);
+    if (!ranked.length) {
+      return res.status(404).json({
+        success: false,
+        message: "No workers matched the required trade and location criteria"
+      });
+    }
+
+    const bestWorker = ranked[0];
+    gig.worker = bestWorker.workerId;
+    gig.status = "accepted";
+    await gig.save();
+
+    const updatedGig = await Gig.findById(gig._id)
+      .populate("customerDetails", "name email avatar")
+      .populate("workerDetails", "name email avatar skills rating ratingCount isVerified completedJobs");
+
+    res.json({
+      success: true,
+      message: `Autonomous dispatch completed! Assigned to top-ranked worker: ${bestWorker.name}`,
+      algorithmUsed: algorithm,
+      assignedWorker: bestWorker,
+      alternativeCandidatesCount: ranked.length - 1,
+      data: updatedGig
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: "Error running auto-dispatch", error: error.message });
   }
 });
 

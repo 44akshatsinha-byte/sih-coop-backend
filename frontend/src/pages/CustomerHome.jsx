@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { CATEGORIES, gigsApi } from "../api/client.js";
+import { CATEGORIES, gigsApi, aiApi } from "../api/client.js";
 import MapPicker from "../components/MapPicker.jsx";
 
 export default function CustomerHome() {
@@ -14,6 +14,9 @@ export default function CustomerHome() {
     amount: 500,
     urgency: "normal"
   });
+
+  const [aiEstimating, setAiEstimating] = useState(false);
+  const [aiEstimateResult, setAiEstimateResult] = useState(null);
 
   // Detailed address & landmark fields
   const [address, setAddress] = useState("");
@@ -169,6 +172,32 @@ export default function CustomerHome() {
     }
   }
 
+  async function runAiEstimate() {
+    if (!form.description || !form.description.trim()) {
+      setError("Please write a problem description first (e.g., 'pipe burst kitchen' or 'nal se paani tapak raha hai')");
+      return;
+    }
+    setAiEstimating(true);
+    setError("");
+    try {
+      const res = await aiApi.estimate({ description: form.description });
+      if (res && res.suggestedDraft) {
+        setForm((prev) => ({
+          ...prev,
+          title: prev.title || res.suggestedDraft.title,
+          category: res.suggestedDraft.category || prev.category,
+          urgency: res.suggestedDraft.urgency || prev.urgency,
+          amount: res.suggestedDraft.estimatedAmount || prev.amount
+        }));
+        setAiEstimateResult(res);
+      }
+    } catch (err) {
+      setError(err.message || "Failed to analyze task");
+    } finally {
+      setAiEstimating(false);
+    }
+  }
+
   return (
     <div className="space-y-6">
       <form onSubmit={onSubmit} className="space-y-4 rounded-panel border border-[#d9d2c3] bg-[#eee9dd] p-4 sm:p-5">
@@ -217,16 +246,52 @@ export default function CustomerHome() {
 
         {/* Description & Optional Photos */}
         <div className="space-y-2">
-          <label className="block text-sm">
-            {t("gig.description")}
-            <textarea
-              className="mt-1 min-h-24 w-full rounded-card border border-[#cfc8b8] bg-page px-3 py-2"
-              placeholder="Describe what needs to be done, specific requirements, tools needed..."
-              value={form.description}
-              onChange={(e) => setForm({ ...form, description: e.target.value })}
-              required
-            />
-          </label>
+          <div className="flex items-center justify-between gap-2">
+            <label className="block text-sm font-medium">
+              {t("gig.description")}
+            </label>
+            <button
+              type="button"
+              disabled={aiEstimating}
+              onClick={runAiEstimate}
+              className="inline-flex items-center gap-1.5 rounded-card bg-purple-700 px-3 py-1 text-xs font-bold text-white shadow-xs hover:bg-purple-800 transition-colors"
+              title="Automatically detect trade, urgency, and recommended Government Schedule Rate (English or Hindi)"
+            >
+              <span>⚡ {aiEstimating ? "Analyzing with AI..." : "AI Auto-Estimate (Hindi/Eng)"}</span>
+            </button>
+          </div>
+          <textarea
+            className="mt-1 min-h-24 w-full rounded-card border border-[#cfc8b8] bg-page px-3 py-2"
+            placeholder="Describe what needs to be done, specific requirements, tools needed... (e.g. 'nal se paani tapak raha hai kitchen me pipe toot gaya')"
+            value={form.description}
+            onChange={(e) => setForm({ ...form, description: e.target.value })}
+            required
+          />
+
+          {aiEstimateResult && (
+            <div className="rounded-card border border-purple-300 bg-purple-50 p-3 text-xs space-y-1.5 text-purple-950 shadow-xs">
+              <div className="flex flex-wrap items-center justify-between gap-1">
+                <span className="font-bold flex items-center gap-1">
+                  🏛️ Government DSR Rate: ₹{aiEstimateResult.fairPricingBreakdown?.totalRecommendedAmount}
+                </span>
+                <span className="rounded bg-purple-200 text-purple-900 px-2 py-0.5 font-semibold uppercase text-[10px]">
+                  {aiEstimateResult.detected?.category} · {aiEstimateResult.detected?.urgency}
+                </span>
+              </div>
+              <p className="text-purple-900/90 text-[11px]">
+                {aiEstimateResult.explainability}
+              </p>
+              <div className="flex flex-wrap gap-2 text-[11px] pt-1 border-t border-purple-200">
+                <span className="text-emerald-800 font-semibold">
+                  ✓ Worker Guaranteed: ₹{aiEstimateResult.fairPricingBreakdown?.cooperativeDistribution?.workerEarnings} (85%)
+                </span>
+                <span className="text-purple-800 font-semibold">
+                  🛡️ Welfare Reserve: ₹{aiEstimateResult.fairPricingBreakdown?.cooperativeDistribution?.cooperativeWelfarePool} (15%)
+                </span>
+              </div>
+            </div>
+          )}
+        </div>
 
           {/* Photo Upload Section */}
           <div className="rounded-card border border-[#cfc8b8] bg-[#e7e1d3] p-3 space-y-2">
@@ -263,7 +328,6 @@ export default function CustomerHome() {
               </div>
             )}
           </div>
-        </div>
 
         {/* Location, Address, Landmarks Section */}
         <fieldset className="space-y-3 rounded-card border border-[#cfc8b8] bg-[#e7e1d3] p-3.5">

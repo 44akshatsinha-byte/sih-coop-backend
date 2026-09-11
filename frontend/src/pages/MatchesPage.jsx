@@ -25,10 +25,12 @@ export default function MatchesPage() {
   const [error, setError] = useState("");
   const [booking, setBooking] = useState(false);
   const [acceptingProposalId, setAcceptingProposalId] = useState(null);
+  const [algorithm, setAlgorithm] = useState("hybrid");
+  const [autoDispatching, setAutoDispatching] = useState(false);
 
   const gigId = loc.state?.gigId || sessionStorage.getItem("lastGigId");
 
-  async function loadData() {
+  async function loadData(algo = algorithm) {
     if (!gigId) return;
     setError("");
     try {
@@ -42,7 +44,8 @@ export default function MatchesPage() {
         longitude: loc.state?.longitude,
         category: loc.state?.category,
         urgency: loc.state?.urgency,
-        limit: 5
+        limit: 5,
+        mode: algo
       };
       const matchRes = await matchApi.rank(body);
       setRows(matchRes.data || []);
@@ -51,6 +54,25 @@ export default function MatchesPage() {
       }
     } catch (e) {
       setError(e.message || "Failed to load matches");
+    }
+  }
+
+  function handleAlgorithmChange(newAlgo) {
+    setAlgorithm(newAlgo);
+    loadData(newAlgo);
+  }
+
+  async function handleAutoDispatch() {
+    if (!gigId) return;
+    setAutoDispatching(true);
+    setError("");
+    try {
+      await gigsApi.autoDispatch(gigId, algorithm);
+      navigate(`/gigs/${gigId}`);
+    } catch (e) {
+      setError(e.message || "Auto-dispatch failed");
+    } finally {
+      setAutoDispatching(false);
     }
   }
 
@@ -244,12 +266,66 @@ export default function MatchesPage() {
         </div>
       )}
 
-      {/* SECTION 2: MATCHED WORKERS QUEUE */}
+      {/* SECTION 2: GOVERNMENT RECOMMENDATION & DISPATCH ENGINE */}
+      <div className="rounded-panel border border-[#cfc8b8] bg-[#f8f5ee] p-4 space-y-3 shadow-xs">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="text-lg">⚖️</span>
+              <h2 className="text-sm font-bold text-teal-ink uppercase tracking-wide">
+                Government Recommendation & Dispatch Engine
+              </h2>
+            </div>
+            <p className="text-xs text-slate-muted">
+              Live Policy Selector for Hackathon Demonstration: Compare how dispatch shifts between Pareto efficiency, affirmative income equity, and geodesic speed.
+            </p>
+          </div>
+
+          <button
+            disabled={autoDispatching || booking || !rows.length}
+            onClick={handleAutoDispatch}
+            className="min-h-10 inline-flex items-center gap-2 rounded-card bg-emerald-700 px-4 py-2 text-xs font-bold text-white shadow hover:bg-emerald-800 transition-colors"
+            title="Automatically assign the top-ranked candidate based on the active government algorithm"
+          >
+            <span>⚡ {autoDispatching ? "Auto-Dispatching..." : "Autonomous Cooperative Dispatch"}</span>
+          </button>
+        </div>
+
+        {/* Algorithm Selection Pills */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-2 border-t border-[#e2dcd0]">
+          {[
+            { id: "hybrid", label: "🏛️ Govt Consensus", desc: "TOPSIS 40% · Equity 30% · Proximity 30%" },
+            { id: "equity", label: "⚖️ Fair Income Equity", desc: "Boosts under-served artisans & new workers" },
+            { id: "topsis", label: "📊 TOPSIS Multi-Criteria", desc: "Pareto-optimal geometric vector closeness" },
+            { id: "proximity", label: "📍 Proximity-First", desc: "Fastest response geodesic dispatch" }
+          ].map((algo) => (
+            <button
+              key={algo.id}
+              onClick={() => handleAlgorithmChange(algo.id)}
+              className={`rounded-card p-2 text-xs font-semibold text-left transition-all border ${
+                algorithm === algo.id
+                  ? "bg-forest text-white border-forest shadow-xs ring-2 ring-forest/30"
+                  : "bg-white text-slate-700 border-[#cfc8b8] hover:bg-[#eee9dd]"
+              }`}
+            >
+              <div className="font-bold">{algo.label}</div>
+              <div className={`text-[10px] ${algorithm === algo.id ? "text-white/80" : "text-slate-500"}`}>
+                {algo.desc}
+              </div>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* SECTION 3: MATCHED WORKERS QUEUE */}
       <div className="space-y-3">
         <div className="flex items-center justify-between">
           <h2 className="text-base font-semibold text-teal-ink">
-            {t("nav.matches")} & Recommended Pro Workers ({rows.length})
+            {t("nav.matches")} & Ranked Candidates ({rows.length})
           </h2>
+          <span className="text-xs text-slate-muted font-medium">
+            Active Policy: <strong className="text-teal-ink uppercase">{algorithm}</strong>
+          </span>
         </div>
 
         {!rows.length && (
@@ -309,6 +385,35 @@ export default function MatchesPage() {
                           {s}
                         </span>
                       ))}
+                    </div>
+                  )}
+
+                  {/* Government Badges */}
+                  {row.governmentBadges && row.governmentBadges.length > 0 && (
+                    <div className="flex flex-wrap gap-1.5 pt-1">
+                      {row.governmentBadges.map((badge, bIdx) => (
+                        <span
+                          key={bIdx}
+                          className={`rounded px-2 py-0.5 text-[10px] font-bold border ${
+                            badge.color === "emerald"
+                              ? "bg-emerald-50 text-emerald-800 border-emerald-300"
+                              : badge.color === "amber"
+                              ? "bg-amber-50 text-amber-900 border-amber-300"
+                              : badge.color === "purple"
+                              ? "bg-purple-50 text-purple-900 border-purple-300"
+                              : "bg-blue-50 text-blue-900 border-blue-300"
+                          }`}
+                        >
+                          ★ {badge.label}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Algorithm / Policy Explainability Note */}
+                  {row.algorithmNote && (
+                    <div className="rounded-card bg-white/70 p-2 text-[11px] text-teal-ink border border-[#cfc8b8]">
+                      ⚖️ <strong>Policy Metric:</strong> {row.algorithmNote}
                     </div>
                   )}
 
