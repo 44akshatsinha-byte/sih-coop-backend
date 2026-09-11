@@ -85,12 +85,18 @@ router.post("/", authMiddleware, requireRole("customer", "admin"), async (req, r
 
     const topN = Math.min(10, Math.max(1, parseInt(limit, 10) || 5));
     const rankMode = String(mode || "formula").toLowerCase() === "ml" ? "ml" : "formula";
+    const availableOnly = String(req.body.availableOnly || "true").toLowerCase() !== "false";
 
-    const workers = await User.find({
+    const workerFilter = {
       role: "worker",
       latitude: { $ne: null },
       longitude: { $ne: null }
-    }).select(
+    };
+    if (availableOnly) {
+      workerFilter.isAvailable = true;
+    }
+
+    const workers = await User.find(workerFilter).select(
       "name skills phone isVerified latitude longitude rating ratingCount isAvailable completedJobs"
     );
 

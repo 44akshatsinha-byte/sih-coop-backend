@@ -35,6 +35,43 @@ app.get("/health", (req, res) => {
   });
 });
 
+app.get("/api/docs", (req, res) => {
+  res.json({
+    title: "Cooperative Gig Services Platform API",
+    version: "1.0.0",
+    baseUrl: "/api",
+    endpoints: {
+      auth: {
+        "POST /auth/register": "Register new user (customer/worker/admin)",
+        "POST /auth/login": "Login and get JWT token",
+        "GET /auth/me": "Get current user profile"
+      },
+      gigs: {
+        "POST /gigs": "Create gig (customer/admin)",
+        "GET /gigs": "List gigs with filters & pagination",
+        "GET /gigs/my-gigs": "Get current user's gigs",
+        "GET /gigs/:id": "Get single gig details",
+        "PUT /gigs/:id": "Update gig (owner/admin, pending/accepted only)",
+        "PUT /gigs/:id/accept": "Worker accepts gig",
+        "PUT /gigs/:id/complete": "Complete gig & distribute payment",
+        "PUT /gigs/:id/cancel": "Cancel gig (owner/worker/admin)",
+        "DELETE /gigs/:id": "Delete gig (admin)"
+      },
+      payments: {
+        "POST /payments/create-order": "Create Razorpay order (auth required)",
+        "POST /payments/verify": "Verify payment signature (auth required)",
+        "GET /payments/order/:orderId": "Fetch order details (auth required)",
+        "GET /payments/payment/:paymentId": "Fetch payment details (auth required)"
+      },
+      matching: {
+        "GET /match-worker/formula": "Get matching formula details",
+        "POST /match-worker": "Rank workers for a booking"
+      }
+    },
+    auth: "Bearer JWT in Authorization header (except public endpoints)"
+  });
+});
+
 app.use("/api/auth", authRoutes);
 app.use("/api/gigs", gigRoutes);
 app.use("/api/payments", paymentRoutes);

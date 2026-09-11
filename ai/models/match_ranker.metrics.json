@@ -1,0 +1,14 @@
+{
+  "r2": 0.974,
+  "mae": 2.0028,
+  "n_train": 6400,
+  "n_test": 1600,
+  "feature_importances": {
+    "distance_km": 0.6123,
+    "skill_score": 0.1966,
+    "rating_norm": 0.0339,
+    "available": 0.1305,
+    "is_emergency": 0.0242,
+    "completed_jobs": 0.0024
+  }
+}

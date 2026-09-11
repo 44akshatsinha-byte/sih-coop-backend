@@ -2,13 +2,14 @@ const express = require("express");
 const Razorpay = require("razorpay");
 const router = express.Router();
 const crypto = require("crypto");
+const { authMiddleware } = require("../middleware/authMiddleware");
 
 const razorpay = new Razorpay({
   key_id: process.env.RAZORPAY_KEY_ID || "rzp_test_dummy_key",
   key_secret: process.env.RAZORPAY_SECRET || "dummy_secret"
 });
 
-router.post("/create-order", async (req, res) => {
+router.post("/create-order", authMiddleware, async (req, res) => {
   try {
     const { amount, currency = "INR", receipt, notes } = req.body;
 
@@ -50,7 +51,7 @@ router.post("/create-order", async (req, res) => {
   }
 });
 
-router.post("/verify", async (req, res) => {
+router.post("/verify", authMiddleware, async (req, res) => {
   try {
     const { 
       razorpay_order_id, 
@@ -103,7 +104,7 @@ router.post("/verify", async (req, res) => {
   }
 });
 
-router.get("/order/:orderId", async (req, res) => {
+router.get("/order/:orderId", authMiddleware, async (req, res) => {
   try {
     const { orderId } = req.params;
     const order = await razorpay.orders.fetch(orderId);
@@ -117,7 +118,7 @@ router.get("/order/:orderId", async (req, res) => {
   }
 });
 
-router.get("/payment/:paymentId", async (req, res) => {
+router.get("/payment/:paymentId", authMiddleware, async (req, res) => {
   try {
     const { paymentId } = req.params;
     const payment = await razorpay.payments.fetch(paymentId);

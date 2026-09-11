@@ -185,7 +185,14 @@ router.get("/me", async (req, res) => {
         phone: user.phone,
         skills: user.skills,
         avatar: user.avatar,
-        createdAt: user.createdAt
+        latitude: user.latitude,
+        longitude: user.longitude,
+        rating: user.rating,
+        ratingCount: user.ratingCount,
+        isAvailable: user.isAvailable,
+        completedJobs: user.completedJobs,
+        createdAt: user.createdAt,
+        updatedAt: user.updatedAt
       }
     });
   } catch (error) {

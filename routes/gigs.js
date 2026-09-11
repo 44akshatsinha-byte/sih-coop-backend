@@ -313,6 +313,56 @@ router.put("/:id/accept", authMiddleware, requireRole("worker", "admin"), async 
   }
 });
 
+router.put("/:id/start", authMiddleware, requireRole("worker", "admin"), async (req, res) => {
+  try {
+    const gig = await Gig.findById(req.params.id);
+    if (!gig) {
+      return res.status(404).json({ 
+        success: false, 
+        message: "Gig not found" 
+      });
+    }
+
+    if (gig.status !== "accepted") {
+      return res.status(400).json({ 
+        success: false, 
+        message: `Gig must be accepted first (current status: ${gig.status})` 
+      });
+    }
+
+    if (gig.worker && gig.worker.toString() !== req.user.id && req.user.role !== "admin") {
+      return res.status(403).json({ 
+        success: false, 
+        message: "Only the assigned worker can start this gig" 
+      });
+    }
+
+    gig.status = "in-progress";
+    await gig.save();
+
+    const updatedGig = await Gig.findById(gig._id)
+      .populate("customerDetails", "name email avatar")
+      .populate("workerDetails", "name email avatar skills");
+
+    res.json({ 
+      success: true, 
+      message: "Gig marked as in-progress", 
+      data: updatedGig 
+    });
+  } catch (error) {
+    if (error.name === "CastError") {
+      return res.status(400).json({ 
+        success: false, 
+        message: "Invalid gig ID" 
+      });
+    }
+    res.status(500).json({ 
+      success: false, 
+      message: "Server error starting gig" 
+    });
+  }
+});
+
 router.put("/:id/complete", authMiddleware, async (req, res) => {
   const session = await Gig.startSession();
   session.startTransaction();
@@ -354,7 +404,7 @@ router.put("/:id/complete", authMiddleware, async (req, res) => {
     if (gig.worker) {
       await User.findByIdAndUpdate(
         gig.worker,
-        { $inc: { balance: workerAmount } },
+        { $inc: { balance: workerAmount, completedJobs: 1 } },
         { session }
       );
     }
@@ -431,9 +481,10 @@ router.put("/:id/cancel", authMiddleware, async (req, res) => {
     }
 
     const isCustomer = gig.customer.toString() === req.user.id;
+    const isWorker = gig.worker && gig.worker.toString() === req.user.id;
     const isAdmin = req.user.role === "admin";
 
-    if (!isCustomer && !isAdmin) {
+    if (!isCustomer && !isWorker && !isAdmin) {
       return res.status(403).json({ 
         success: false, 
         message: "Not authorized to cancel this gig" 
@@ -452,10 +503,14 @@ router.put("/:id/cancel", authMiddleware, async (req, res) => {
     gig.cancellationReason = reason?.trim() || "Cancelled by user";
     await gig.save();
 
+    const populatedGig = await Gig.findById(gig._id)
+      .populate("customerDetails", "name email phone avatar")
+      .populate("workerDetails", "name email phone avatar skills");
+
     res.json({ 
       success: true, 
       message: "Gig cancelled successfully", 
-      data: gig 
+      data: populatedGig 
     });
   } catch (error) {
     if (error.name === "CastError") {
