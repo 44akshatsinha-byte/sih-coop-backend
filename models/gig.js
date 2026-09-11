@@ -48,6 +48,34 @@ const GigSchema = new mongoose.Schema({
     trim: true,
     default: ""
   },
+  locationPoint: {
+    type: {
+      type: String,
+      enum: ["Point"]
+    },
+    coordinates: {
+      type: [Number]
+    }
+  },
+  urgency: {
+    type: String,
+    enum: ["normal", "emergency"],
+    default: "normal"
+  },
+  review: {
+    rating: { type: Number, min: 1, max: 5, default: null },
+    text: { type: String, trim: true, default: "" },
+    createdAt: { type: Date, default: null }
+  },
+  reviewFlag: {
+    flagged: { type: Boolean, default: false },
+    reasons: [{ type: String, trim: true }],
+    status: {
+      type: String,
+      enum: ["clear", "open", "dismissed", "escalated"],
+      default: "clear"
+    }
+  },
   estimatedDuration: {
     type: String,
     trim: true,
@@ -81,6 +109,8 @@ GigSchema.index({ customer: 1 });
 GigSchema.index({ worker: 1 });
 GigSchema.index({ createdAt: -1 });
 GigSchema.index({ category: 1 });
+GigSchema.index({ locationPoint: "2dsphere" });
+GigSchema.index({ "reviewFlag.flagged": 1, "reviewFlag.status": 1 });
 
 GigSchema.virtual("customerDetails", {
   ref: "User",

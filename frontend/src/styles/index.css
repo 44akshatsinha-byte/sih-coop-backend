@@ -1,0 +1,26 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: light;
+}
+
+html, body, #root {
+  min-height: 100%;
+}
+
+body {
+  margin: 0;
+  background: #F3EFE6;
+  color: #3A5F5F;
+  font-family: "Segoe UI", system-ui, sans-serif;
+}
+
+.leaflet-container {
+  height: 100%;
+  width: 100%;
+  border-radius: 12px;
+  background: #e7e2d6;
+  z-index: 0;
+}

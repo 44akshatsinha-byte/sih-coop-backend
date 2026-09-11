@@ -9,6 +9,14 @@ const razorpay = new Razorpay({
   key_secret: process.env.RAZORPAY_SECRET || "dummy_secret"
 });
 
+router.get("/config", (req, res) => {
+  res.json({
+    success: true,
+    keyId: process.env.RAZORPAY_KEY_ID || "",
+    currency: "INR"
+  });
+});
+
 router.post("/create-order", authMiddleware, async (req, res) => {
   try {
     const { amount, currency = "INR", receipt, notes } = req.body;

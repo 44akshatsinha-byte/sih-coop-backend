@@ -3,6 +3,7 @@ const router = express.Router();
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const User = require("../models/user");
+const { authMiddleware } = require("../middleware/authMiddleware");
 
 const jwtSecret = process.env.JWT_SECRET || "super_secret_hackathon_key";
 const tokenExpiry = process.env.JWT_EXPIRY || "1h";
@@ -52,7 +53,9 @@ router.post("/register", async (req, res) => {
       password: hashedPassword,
       role: userRole,
       phone: phone?.trim() || "",
-      skills: Array.isArray(skills) ? skills.map(s => s.trim()).filter(Boolean) : []
+      skills: Array.isArray(skills) ? skills.map(s => s.trim()).filter(Boolean) : [],
+      verificationStatus: userRole === "worker" ? "pending" : "verified",
+      isVerified: userRole !== "worker"
     });
 
     const token = jwt.sign(
@@ -71,7 +74,8 @@ router.post("/register", async (req, res) => {
         email: newUser.email, 
         role: newUser.role,
         balance: newUser.balance,
-        isVerified: newUser.isVerified
+        isVerified: newUser.isVerified,
+        verificationStatus: newUser.verificationStatus
       }
     });
   } catch (error) {
@@ -140,6 +144,7 @@ router.post("/login", async (req, res) => {
         role: user.role,
         balance: user.balance,
         isVerified: user.isVerified,
+        verificationStatus: user.verificationStatus,
         avatar: user.avatar
       }
     });
@@ -182,6 +187,8 @@ router.get("/me", async (req, res) => {
         role: user.role,
         balance: user.balance,
         isVerified: user.isVerified,
+        verificationStatus: user.verificationStatus,
+        verificationNote: user.verificationNote,
         phone: user.phone,
         skills: user.skills,
         avatar: user.avatar,
@@ -205,6 +212,87 @@ router.get("/me", async (req, res) => {
     res.status(500).json({ 
       success: false, 
       message: "Error fetching user profile" 
+    });
+  }
+});
+
+function publicUser(user) {
+  return {
+    id: user._id,
+    name: user.name,
+    email: user.email,
+    role: user.role,
+    balance: user.balance,
+    isVerified: user.isVerified,
+    verificationStatus: user.verificationStatus,
+    verificationNote: user.verificationNote,
+    phone: user.phone,
+    skills: user.skills,
+    avatar: user.avatar,
+    latitude: user.latitude,
+    longitude: user.longitude,
+    rating: user.rating,
+    ratingCount: user.ratingCount,
+    isAvailable: user.isAvailable,
+    completedJobs: user.completedJobs,
+    createdAt: user.createdAt,
+    updatedAt: user.updatedAt
+  };
+}
+
+router.patch("/me", authMiddleware, async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id);
+    if (!user) {
+      return res.status(404).json({ success: false, message: "User not found" });
+    }
+
+    const { phone, skills, isAvailable, latitude, longitude, name } = req.body || {};
+
+    if (name !== undefined) {
+      const n = String(name).trim();
+      if (!n || n.length > 100) {
+        return res.status(400).json({ success: false, message: "Name must be 1–100 characters" });
+      }
+      user.name = n;
+    }
+
+    if (phone !== undefined) user.phone = String(phone).trim();
+
+    if (skills !== undefined) {
+      const list = Array.isArray(skills)
+        ? skills
+        : String(skills).split(",").map((s) => s.trim());
+      user.skills = list.map((s) => String(s).trim()).filter(Boolean);
+    }
+
+    if (isAvailable !== undefined) {
+      user.isAvailable = isAvailable === true || isAvailable === "true";
+    }
+
+    if (latitude !== undefined) {
+      const lat = latitude === null || latitude === "" ? null : Number(latitude);
+      if (lat !== null && (!Number.isFinite(lat) || lat < -90 || lat > 90)) {
+        return res.status(400).json({ success: false, message: "Invalid latitude" });
+      }
+      user.latitude = lat;
+    }
+
+    if (longitude !== undefined) {
+      const lng = longitude === null || longitude === "" ? null : Number(longitude);
+      if (lng !== null && (!Number.isFinite(lng) || lng < -180 || lng > 180)) {
+        return res.status(400).json({ success: false, message: "Invalid longitude" });
+      }
+      user.longitude = lng;
+    }
+
+    await user.save();
+    res.json({ success: true, message: "Profile updated", user: publicUser(user) });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "Error updating profile",
+      error: process.env.NODE_ENV === "development" ? error.message : undefined
     });
   }
 });

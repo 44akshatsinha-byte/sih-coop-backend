@@ -5,11 +5,7 @@ const Gig = require("../models/gig");
 const { authMiddleware, requireRole } = require("../middleware/authMiddleware");
 const { rankWorkers, formulaDescription } = require("../services/matching");
 const { modelExists, predictMatchQuality } = require("../services/mlRanker");
-
-function parseUrgency(value) {
-  const v = String(value || "normal").toLowerCase();
-  return v === "emergency" || v === "on-demand" ? "emergency" : "normal";
-}
+const { parseUrgency, parseLocationPoint, coordsFromPoint } = require("../services/location");
 
 function toWorkerPayload(user) {
   return {
@@ -60,14 +56,28 @@ router.post("/", authMiddleware, requireRole("customer", "admin"), async (req, r
       if (!skills.length && gig.category && gig.category !== "general") {
         skills = [gig.category];
       }
+      if (urgency == null) {
+        bookingUrgency = parseUrgency(gig.urgency);
+      }
+      const stored = coordsFromPoint(gig.locationPoint);
+      if (stored && (bookingLat == null || bookingLng == null)) {
+        bookingLat = stored.latitude;
+        bookingLng = stored.longitude;
+      }
     }
 
     if (!skills.length && category) {
       skills = [category];
     }
 
-    bookingLat = Number(bookingLat);
-    bookingLng = Number(bookingLng);
+    const bodyPoint = parseLocationPoint({ latitude: bookingLat, longitude: bookingLng });
+    if (bodyPoint) {
+      bookingLat = bodyPoint.coordinates[1];
+      bookingLng = bodyPoint.coordinates[0];
+    } else {
+      bookingLat = Number(bookingLat);
+      bookingLng = Number(bookingLng);
+    }
 
     if (!Number.isFinite(bookingLat) || !Number.isFinite(bookingLng)) {
       return res.status(400).json({

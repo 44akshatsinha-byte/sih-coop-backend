@@ -8,6 +8,7 @@ const authRoutes = require("./routes/auth");
 const gigRoutes = require("./routes/gigs");
 const paymentRoutes = require("./routes/payments");
 const matchRoutes = require("./routes/match");
+const adminRoutes = require("./routes/admin");
 
 const app = express();
 
@@ -44,7 +45,8 @@ app.get("/api/docs", (req, res) => {
       auth: {
         "POST /auth/register": "Register new user (customer/worker/admin)",
         "POST /auth/login": "Login and get JWT token",
-        "GET /auth/me": "Get current user profile"
+        "GET /auth/me": "Get current user profile",
+        "PATCH /auth/me": "Update skills, availability, phone, location"
       },
       gigs: {
         "POST /gigs": "Create gig (customer/admin)",
@@ -52,12 +54,16 @@ app.get("/api/docs", (req, res) => {
         "GET /gigs/my-gigs": "Get current user's gigs",
         "GET /gigs/:id": "Get single gig details",
         "PUT /gigs/:id": "Update gig (owner/admin, pending/accepted only)",
+        "PUT /gigs/:id/assign": "Customer/admin books a matched worker",
         "PUT /gigs/:id/accept": "Worker accepts gig",
+        "PUT /gigs/:id/start": "Worker starts gig (in-progress)",
+        "POST /gigs/:id/review": "Customer rates a completed gig",
         "PUT /gigs/:id/complete": "Complete gig & distribute payment",
         "PUT /gigs/:id/cancel": "Cancel gig (owner/worker/admin)",
         "DELETE /gigs/:id": "Delete gig (admin)"
       },
       payments: {
+        "GET /payments/config": "Public Razorpay keyId for Checkout.js",
         "POST /payments/create-order": "Create Razorpay order (auth required)",
         "POST /payments/verify": "Verify payment signature (auth required)",
         "GET /payments/order/:orderId": "Fetch order details (auth required)",
@@ -65,7 +71,14 @@ app.get("/api/docs", (req, res) => {
       },
       matching: {
         "GET /match-worker/formula": "Get matching formula details",
-        "POST /match-worker": "Rank workers for a booking"
+        "POST /match-worker": "Rank workers for a booking (gigId + stored coords supported)"
+      },
+      admin: {
+        "GET /admin/forecast": "Demand vs supply series and shortage alerts",
+        "GET /admin/verification-queue": "Workers pending verification",
+        "PUT /admin/workers/:id/verify": "Set verification status",
+        "GET /admin/flagged-reviews": "Open/escalated review flags",
+        "PUT /admin/flagged-reviews/:gigId": "dismiss or escalate"
       }
     },
     auth: "Bearer JWT in Authorization header (except public endpoints)"
@@ -76,6 +89,7 @@ app.use("/api/auth", authRoutes);
 app.use("/api/gigs", gigRoutes);
 app.use("/api/payments", paymentRoutes);
 app.use("/api/match-worker", matchRoutes);
+app.use("/api/admin", adminRoutes);
 
 app.get("/", (req, res) => {
   res.json({ 

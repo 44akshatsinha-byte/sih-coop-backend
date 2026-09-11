@@ -44,6 +44,16 @@ const UserSchema = new mongoose.Schema({
     type: Boolean,
     default: false
   },
+  verificationStatus: {
+    type: String,
+    enum: ["pending", "verified", "rejected"],
+    default: "pending"
+  },
+  verificationNote: {
+    type: String,
+    trim: true,
+    default: ""
+  },
   avatar: {
     type: String,
     default: ""
@@ -89,6 +99,18 @@ const UserSchema = new mongoose.Schema({
 UserSchema.index({ email: 1 });
 UserSchema.index({ role: 1 });
 UserSchema.index({ role: 1, isAvailable: 1 });
+UserSchema.index({ role: 1, verificationStatus: 1 });
+
+UserSchema.pre("save", function syncVerified(next) {
+  if (this.isModified("verificationStatus") || this.isNew) {
+    this.isVerified = this.verificationStatus === "verified";
+  }
+  if (this.isModified("isVerified") && !this.isModified("verificationStatus")) {
+    this.verificationStatus = this.isVerified ? "verified" : this.verificationStatus || "pending";
+    if (this.isVerified) this.verificationStatus = "verified";
+  }
+  next();
+});
 
 UserSchema.virtual("gigsPosted", {
   ref: "Gig",

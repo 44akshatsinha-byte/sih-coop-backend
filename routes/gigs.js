@@ -4,13 +4,25 @@ const Gig = require("../models/gig");
 const User = require("../models/user");
 const CooperativePool = require("../models/CooperativePool");
 const { authMiddleware, requireRole } = require("../middleware/authMiddleware");
+const { parseUrgency, parseLocationPoint } = require("../services/location");
+const { evaluateReviewFlag } = require("../services/reviewFlagger");
 
 const COOPERATIVE_SPLIT = 0.15;
 const WORKER_SPLIT = 0.85;
 
 router.post("/", authMiddleware, requireRole("customer", "admin"), async (req, res) => {
   try {
-    const { title, description, amount, category, location, estimatedDuration, images } = req.body;
+    const {
+      title,
+      description,
+      amount,
+      category,
+      serviceType,
+      location,
+      estimatedDuration,
+      images,
+      urgency
+    } = req.body;
 
     if (!title || !description || !amount) {
       return res.status(400).json({ 
@@ -26,16 +38,28 @@ router.post("/", authMiddleware, requireRole("customer", "admin"), async (req, r
       });
     }
 
-    const newGig = await Gig.create({
+    const point = parseLocationPoint(req.body);
+    if (point === null) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid coordinates. latitude [-90,90], longitude [-180,180]"
+      });
+    }
+
+    const payload = {
       title: title.trim(),
       description: description.trim(),
       amount: Number(amount),
-      category: category?.trim() || "general",
+      category: (category || serviceType)?.trim() || "general",
       location: location?.trim() || "",
       estimatedDuration: estimatedDuration?.trim() || "",
       images: Array.isArray(images) ? images.filter(Boolean) : [],
-      customer: req.user.id
-    });
+      customer: req.user.id,
+      urgency: parseUrgency(urgency)
+    };
+    if (point) payload.locationPoint = point;
+
+    const newGig = await Gig.create(payload);
 
     const populatedGig = await Gig.findById(newGig._id)
       .populate("customerDetails", "name email avatar")
@@ -220,15 +244,25 @@ router.put("/:id", authMiddleware, async (req, res) => {
       });
     }
 
-    const { title, description, amount, category, location, estimatedDuration, images } = req.body;
+    const { title, description, amount, category, serviceType, location, estimatedDuration, images, urgency } = req.body;
 
     if (title) gig.title = title.trim();
     if (description) gig.description = description.trim();
     if (amount) gig.amount = Number(amount);
-    if (category) gig.category = category.trim();
+    if (category || serviceType) gig.category = (category || serviceType).trim();
     if (location !== undefined) gig.location = location.trim();
     if (estimatedDuration !== undefined) gig.estimatedDuration = estimatedDuration.trim();
     if (Array.isArray(images)) gig.images = images.filter(Boolean);
+    if (urgency !== undefined) gig.urgency = parseUrgency(urgency);
+
+    const point = parseLocationPoint(req.body);
+    if (point === null) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid coordinates. latitude [-90,90], longitude [-180,180]"
+      });
+    }
+    if (point) gig.locationPoint = point;
 
     await gig.save();
 
@@ -259,6 +293,59 @@ router.put("/:id", authMiddleware, async (req, res) => {
       success: false, 
       message: "Server error updating gig" 
     });
+  }
+});
+
+router.put("/:id/assign", authMiddleware, requireRole("customer", "admin"), async (req, res) => {
+  try {
+    const { workerId } = req.body || {};
+    if (!workerId) {
+      return res.status(400).json({ success: false, message: "workerId is required" });
+    }
+
+    const gig = await Gig.findById(req.params.id);
+    if (!gig) {
+      return res.status(404).json({ success: false, message: "Gig not found" });
+    }
+
+    if (gig.customer.toString() !== req.user.id && req.user.role !== "admin") {
+      return res.status(403).json({ success: false, message: "Not authorized to assign this gig" });
+    }
+
+    if (gig.status !== "pending") {
+      return res.status(400).json({
+        success: false,
+        message: `Gig can only be assigned while pending (current status: ${gig.status})`
+      });
+    }
+
+    const worker = await User.findById(workerId);
+    if (!worker || worker.role !== "worker") {
+      return res.status(400).json({ success: false, message: "Worker not found" });
+    }
+
+    if (worker._id.toString() === gig.customer.toString()) {
+      return res.status(400).json({ success: false, message: "You cannot assign the gig to the customer" });
+    }
+
+    gig.worker = worker._id;
+    gig.status = "accepted";
+    await gig.save();
+
+    const updatedGig = await Gig.findById(gig._id)
+      .populate("customerDetails", "name email avatar")
+      .populate("workerDetails", "name email avatar skills rating ratingCount isAvailable isVerified");
+
+    res.json({
+      success: true,
+      message: "Worker assigned successfully",
+      data: updatedGig
+    });
+  } catch (error) {
+    if (error.name === "CastError") {
+      return res.status(400).json({ success: false, message: "Invalid gig or worker ID" });
+    }
+    res.status(500).json({ success: false, message: "Server error assigning gig" });
   }
 });
 
@@ -466,6 +553,71 @@ router.put("/:id/complete", authMiddleware, async (req, res) => {
     });
   } finally {
     session.endSession();
+  }
+});
+
+router.post("/:id/review", authMiddleware, requireRole("customer", "admin"), async (req, res) => {
+  try {
+    const rating = Number(req.body?.rating);
+    const text = typeof req.body?.text === "string" ? req.body.text.trim() : "";
+
+    if (!Number.isInteger(rating) || rating < 1 || rating > 5) {
+      return res.status(400).json({ success: false, message: "rating must be an integer from 1 to 5" });
+    }
+
+    const gig = await Gig.findById(req.params.id);
+    if (!gig) {
+      return res.status(404).json({ success: false, message: "Gig not found" });
+    }
+
+    if (gig.customer.toString() !== req.user.id && req.user.role !== "admin") {
+      return res.status(403).json({ success: false, message: "Only the customer can review this gig" });
+    }
+
+    if (gig.status !== "completed") {
+      return res.status(400).json({ success: false, message: "Gig must be completed before review" });
+    }
+
+    if (gig.review && gig.review.rating) {
+      return res.status(400).json({ success: false, message: "This gig already has a review" });
+    }
+
+    if (!gig.worker) {
+      return res.status(400).json({ success: false, message: "No worker assigned to review" });
+    }
+
+    gig.review = { rating, text, createdAt: new Date() };
+    gig.reviewFlag = await evaluateReviewFlag(Gig, {
+      gig,
+      workerId: gig.worker,
+      rating,
+      text
+    });
+    await gig.save();
+
+    const worker = await User.findById(gig.worker);
+    if (worker) {
+      const nextCount = (worker.ratingCount || 0) + 1;
+      const nextAvg = ((worker.rating || 0) * (worker.ratingCount || 0) + rating) / nextCount;
+      worker.rating = Math.round(nextAvg * 100) / 100;
+      worker.ratingCount = nextCount;
+      await worker.save();
+    }
+
+    const updatedGig = await Gig.findById(gig._id)
+      .populate("customerDetails", "name email avatar")
+      .populate("workerDetails", "name email avatar skills rating ratingCount");
+
+    res.status(201).json({
+      success: true,
+      message: "Review submitted",
+      data: updatedGig
+    });
+  } catch (error) {
+    if (error.name === "CastError") {
+      return res.status(400).json({ success: false, message: "Invalid gig ID" });
+    }
+    res.status(500).json({ success: false, message: "Server error submitting review" });
   }
 });
 

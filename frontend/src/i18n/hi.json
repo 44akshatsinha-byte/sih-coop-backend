@@ -1,0 +1,108 @@
+{
+  "app": {
+    "name": "सहकारी गिग",
+    "tagline": "स्थानीय काम, साझा लाभ"
+  },
+  "nav": {
+    "home": "होम",
+    "matches": "मैच / काम",
+    "account": "खाता",
+    "jobs": "काम",
+    "profile": "प्रोफ़ाइल",
+    "forecast": "पूर्वानुमान",
+    "queue": "कतार",
+    "flags": "फ़्लैग"
+  },
+  "lang": {
+    "en": "EN",
+    "hi": "हिं"
+  },
+  "auth": {
+    "login": "लॉग इन",
+    "register": "पंजीकरण",
+    "email": "ईमेल",
+    "password": "पासवर्ड",
+    "name": "नाम",
+    "role": "मैं हूँ",
+    "customer": "ग्राहक",
+    "worker": "कर्मचारी",
+    "admin": "प्रशासक",
+    "submitLogin": "जारी रखें",
+    "submitRegister": "खाता बनाएँ",
+    "haveAccount": "पहले से खाता है?",
+    "needAccount": "नए हैं?",
+    "logout": "लॉग आउट"
+  },
+  "gig": {
+    "post": "गिग पोस्ट करें",
+    "title": "शीर्षक",
+    "description": "क्या काम है?",
+    "serviceType": "सेवा प्रकार",
+    "amount": "राशि (INR)",
+    "locationLabel": "स्थान नाम (वैकल्पिक)",
+    "useMyLocation": "मेरा स्थान उपयोग करें",
+    "mapHint": "मानचित्र पर टैप करें या अपना स्थान उपयोग करें। निर्देशांक मानचित्र पर ही रहेंगे।",
+    "urgency": "तात्कालिकता",
+    "normal": "सामान्य",
+    "emergency": "आपातकाल",
+    "emergencyBadge": "आपातकाल",
+    "submit": "कर्मचारी खोजें",
+    "pending": "लंबित",
+    "accepted": "स्वीकृत",
+    "inProgress": "चल रहा है",
+    "completed": "पूर्ण",
+    "cancelled": "रद्द",
+    "start": "काम शुरू करें",
+    "complete": "पूर्ण चिह्नित करें",
+    "pay": "अभी भुगतान करें",
+    "review": "रेटिंग दें",
+    "reviewText": "टिप्पणी (वैकल्पिक)",
+    "submitReview": "रेटिंग भेजें",
+    "book": "बुक करें",
+    "why": "यह मैच क्यों",
+    "km": "किमी",
+    "stars": "स्टार",
+    "available": "उपलब्ध",
+    "unavailable": "अनुपलब्ध",
+    "shortcuts": "आपके गिग",
+    "noMatches": "अभी रैंक किए कर्मचारी नहीं। पहले गिग पोस्ट करें।"
+  },
+  "profile": {
+    "skills": "कौशल",
+    "availability": "काम के लिए उपलब्ध",
+    "phone": "फ़ोन",
+    "rating": "रेटिंग",
+    "verified": "सत्यापित",
+    "pending": "सत्यापन लंबित",
+    "rejected": "सत्यापन अस्वीकृत",
+    "save": "प्रोफ़ाइल सहेजें",
+    "setLocation": "कार्य स्थान सेट करें"
+  },
+  "admin": {
+    "forecastTitle": "माँग पूर्वानुमान",
+    "days7": "७ दिन",
+    "days30": "३० दिन",
+    "shortage": "कमी",
+    "queueTitle": "सत्यापन कतार",
+    "verify": "सत्यापित करें",
+    "reject": "अस्वीकार करें",
+    "flagsTitle": "फ़्लैग की गई समीक्षाएँ",
+    "dismiss": "खारिज करें",
+    "escalate": "एस्केलेट करें",
+    "emptyQueue": "कोई लंबित कर्मचारी नहीं।",
+    "emptyFlags": "कोई खुला फ़्लैग नहीं।"
+  },
+  "pay": {
+    "title": "गिग का भुगतान",
+    "amount": "राशि",
+    "continue": "Razorpay खोलें",
+    "success": "भुगतान सत्यापित",
+    "cancel": "बंद करें"
+  },
+  "common": {
+    "loading": "लोड हो रहा है…",
+    "error": "कुछ गलत हुआ",
+    "save": "सहेजें",
+    "close": "बंद करें"
+  }
+}

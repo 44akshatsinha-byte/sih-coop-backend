@@ -1,0 +1,108 @@
+{
+  "app": {
+    "name": "Co-op Gigs",
+    "tagline": "Local work, shared benefit"
+  },
+  "nav": {
+    "home": "Home",
+    "matches": "Matches / Jobs",
+    "account": "Account",
+    "jobs": "Jobs",
+    "profile": "Profile",
+    "forecast": "Forecast",
+    "queue": "Queue",
+    "flags": "Flags"
+  },
+  "lang": {
+    "en": "EN",
+    "hi": "हिं"
+  },
+  "auth": {
+    "login": "Log in",
+    "register": "Register",
+    "email": "Email",
+    "password": "Password",
+    "name": "Name",
+    "role": "I am a",
+    "customer": "Customer",
+    "worker": "Worker",
+    "admin": "Admin",
+    "submitLogin": "Continue",
+    "submitRegister": "Create account",
+    "haveAccount": "Already have an account?",
+    "needAccount": "New here?",
+    "logout": "Log out"
+  },
+  "gig": {
+    "post": "Post a gig",
+    "title": "Title",
+    "description": "What needs doing?",
+    "serviceType": "Service type",
+    "amount": "Amount (INR)",
+    "locationLabel": "Place name (optional)",
+    "useMyLocation": "Use my location",
+    "mapHint": "Tap the map or use your location. Coordinates stay on the map.",
+    "urgency": "Urgency",
+    "normal": "Normal",
+    "emergency": "Emergency",
+    "emergencyBadge": "Emergency",
+    "submit": "Find workers",
+    "pending": "Pending",
+    "accepted": "Accepted",
+    "inProgress": "In progress",
+    "completed": "Completed",
+    "cancelled": "Cancelled",
+    "start": "Start job",
+    "complete": "Mark complete",
+    "pay": "Pay now",
+    "review": "Leave a rating",
+    "reviewText": "Comments (optional)",
+    "submitReview": "Submit rating",
+    "book": "Book",
+    "why": "Why this match",
+    "km": "km",
+    "stars": "stars",
+    "available": "Available",
+    "unavailable": "Unavailable",
+    "shortcuts": "Your gigs",
+    "noMatches": "No ranked workers yet. Post a gig first."
+  },
+  "profile": {
+    "skills": "Skills",
+    "availability": "Available for work",
+    "phone": "Phone",
+    "rating": "Rating",
+    "verified": "Verified",
+    "pending": "Verification pending",
+    "rejected": "Verification rejected",
+    "save": "Save profile",
+    "setLocation": "Set work location"
+  },
+  "admin": {
+    "forecastTitle": "Demand forecast",
+    "days7": "7 days",
+    "days30": "30 days",
+    "shortage": "Shortage",
+    "queueTitle": "Verification queue",
+    "verify": "Verify",
+    "reject": "Reject",
+    "flagsTitle": "Flagged reviews",
+    "dismiss": "Dismiss",
+    "escalate": "Escalate",
+    "emptyQueue": "No pending workers.",
+    "emptyFlags": "No open flags."
+  },
+  "pay": {
+    "title": "Pay for gig",
+    "amount": "Amount",
+    "continue": "Open Razorpay",
+    "success": "Payment verified",
+    "cancel": "Close"
+  },
+  "common": {
+    "loading": "Loading…",
+    "error": "Something went wrong",
+    "save": "Save",
+    "close": "Close"
+  }
+}
