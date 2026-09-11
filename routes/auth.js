@@ -247,7 +247,11 @@ router.patch("/me", authMiddleware, async (req, res) => {
       return res.status(404).json({ success: false, message: "User not found" });
     }
 
-    const { phone, skills, isAvailable, latitude, longitude, name } = req.body || {};
+    const { phone, skills, isAvailable, latitude, longitude, name, avatar } = req.body || {};
+
+    if (avatar !== undefined) {
+      user.avatar = typeof avatar === "string" ? avatar.trim() : "";
+    }
 
     if (name !== undefined) {
       const n = String(name).trim();

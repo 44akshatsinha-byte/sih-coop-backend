@@ -72,9 +72,18 @@ export const gigsApi = {
   mine: () => api("/api/gigs/my-gigs"),
   get: (id) => api(`/api/gigs/${id}`),
   assign: (id, workerId) => api(`/api/gigs/${id}/assign`, { method: "PUT", body: { workerId } }),
+  accept: (id) => api(`/api/gigs/${id}/accept`, { method: "PUT" }),
   start: (id) => api(`/api/gigs/${id}/start`, { method: "PUT" }),
   complete: (id) => api(`/api/gigs/${id}/complete`, { method: "PUT" }),
-  review: (id, body) => api(`/api/gigs/${id}/review`, { method: "POST", body })
+  review: (id, body) => api(`/api/gigs/${id}/review`, { method: "POST", body }),
+  updateMaterials: (id, materials) =>
+    api(`/api/gigs/${id}/materials`, { method: "PUT", body: { materials } }),
+  updateEquipment: (id, equipment) =>
+    api(`/api/gigs/${id}/equipment`, { method: "PUT", body: { equipment } }),
+  submitProposal: (id, body) =>
+    api(`/api/gigs/${id}/proposals`, { method: "POST", body }),
+  acceptProposal: (id, proposalId) =>
+    api(`/api/gigs/${id}/proposals/${proposalId}/accept`, { method: "PUT" })
 };
 
 export const matchApi = {

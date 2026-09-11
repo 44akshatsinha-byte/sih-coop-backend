@@ -96,12 +96,11 @@ const UserSchema = new mongoose.Schema({
   toObject: { virtuals: true }
 });
 
-UserSchema.index({ email: 1 });
 UserSchema.index({ role: 1 });
 UserSchema.index({ role: 1, isAvailable: 1 });
 UserSchema.index({ role: 1, verificationStatus: 1 });
 
-UserSchema.pre("save", function syncVerified(next) {
+UserSchema.pre("save", function syncVerified() {
   if (this.isModified("verificationStatus") || this.isNew) {
     this.isVerified = this.verificationStatus === "verified";
   }
@@ -109,7 +108,6 @@ UserSchema.pre("save", function syncVerified(next) {
     this.verificationStatus = this.isVerified ? "verified" : this.verificationStatus || "pending";
     if (this.isVerified) this.verificationStatus = "verified";
   }
-  next();
 });
 
 UserSchema.virtual("gigsPosted", {

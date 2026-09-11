@@ -11,6 +11,7 @@ function toWorkerPayload(user) {
   return {
     _id: user._id,
     name: user.name,
+    avatar: user.avatar || "",
     skills: user.skills,
     phone: user.phone,
     isVerified: user.isVerified,
@@ -48,18 +49,19 @@ router.post("/", authMiddleware, requireRole("customer", "admin"), async (req, r
     let skills = Array.isArray(requiredSkills) ? requiredSkills : [];
     let bookingUrgency = parseUrgency(urgency);
 
+    let currentGig = null;
     if (gigId) {
-      const gig = await Gig.findById(gigId);
-      if (!gig) {
+      currentGig = await Gig.findById(gigId).populate("proposals.worker", "name email avatar skills phone isVerified rating ratingCount completedJobs");
+      if (!currentGig) {
         return res.status(404).json({ success: false, message: "Gig not found" });
       }
-      if (!skills.length && gig.category && gig.category !== "general") {
-        skills = [gig.category];
+      if (!skills.length && currentGig.category && currentGig.category !== "general") {
+        skills = [currentGig.category];
       }
       if (urgency == null) {
-        bookingUrgency = parseUrgency(gig.urgency);
+        bookingUrgency = parseUrgency(currentGig.urgency);
       }
-      const stored = coordsFromPoint(gig.locationPoint);
+      const stored = coordsFromPoint(currentGig.locationPoint);
       if (stored && (bookingLat == null || bookingLng == null)) {
         bookingLat = stored.latitude;
         bookingLng = stored.longitude;
@@ -107,7 +109,7 @@ router.post("/", authMiddleware, requireRole("customer", "admin"), async (req, r
     }
 
     const workers = await User.find(workerFilter).select(
-      "name skills phone isVerified latitude longitude rating ratingCount isAvailable completedJobs"
+      "name avatar skills phone isVerified latitude longitude rating ratingCount isAvailable completedJobs"
     );
 
     const booking = {
@@ -162,6 +164,20 @@ router.post("/", authMiddleware, requireRole("customer", "admin"), async (req, r
       },
       formula: formulaDescription(),
       ml: mlMeta,
+      gig: currentGig ? {
+        _id: currentGig._id,
+        title: currentGig.title,
+        amount: currentGig.amount,
+        baseAmount: currentGig.baseAmount,
+        emergencyFee: currentGig.emergencyFee,
+        materialCost: currentGig.materialCost,
+        equipmentCost: currentGig.equipmentCost || 0,
+        equipment: currentGig.equipment || [],
+        urgency: currentGig.urgency,
+        category: currentGig.category,
+        status: currentGig.status
+      } : null,
+      proposals: currentGig ? (currentGig.proposals || []) : [],
       data: candidates
     });
   } catch (error) {

@@ -1,5 +1,5 @@
-import { useMemo } from "react";
-import { MapContainer, TileLayer, Marker, useMapEvents } from "react-leaflet";
+import { useEffect, useMemo, useRef } from "react";
+import { MapContainer, TileLayer, Marker, useMap, useMapEvents } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 
@@ -11,6 +11,21 @@ const pin = new L.Icon({
   iconAnchor: [12, 41]
 });
 
+function RecenterMap({ value }) {
+  const map = useMap();
+  useEffect(() => {
+    if (value?.lat != null && value?.lng != null) {
+      map.setView([value.lat, value.lng], Math.max(map.getZoom() || 14, 14), {
+        animate: true
+      });
+      setTimeout(() => {
+        map.invalidateSize();
+      }, 150);
+    }
+  }, [value?.lat, value?.lng, map]);
+  return null;
+}
+
 function ClickCapture({ onPick }) {
   useMapEvents({
     click(e) {
@@ -20,23 +35,45 @@ function ClickCapture({ onPick }) {
   return null;
 }
 
-/** Map stays mounted across i18n changes — no key={language}. */
-export default function MapPicker({ value, onChange, height = "16rem" }) {
+/** Interactive Map with auto-recentering, tile invalidation, and drag-drop marker */
+export default function MapPicker({ value, onChange, height = "18rem" }) {
   const center = useMemo(() => {
     if (value?.lat != null && value?.lng != null) return [value.lat, value.lng];
-    return [28.6139, 77.209];
+    return [12.9716, 77.5946];
   }, [value?.lat, value?.lng]);
 
+  const markerRef = useRef(null);
+
+  const eventHandlers = useMemo(
+    () => ({
+      dragend() {
+        const marker = markerRef.current;
+        if (marker != null) {
+          const latlng = marker.getLatLng();
+          onChange({ lat: latlng.lat, lng: latlng.lng });
+        }
+      },
+    }),
+    [onChange]
+  );
+
   return (
-    <div style={{ height }} className="overflow-hidden rounded-card border border-[#cfc8b8]">
-      <MapContainer center={center} zoom={12} scrollWheelZoom={false} style={{ height: "100%" }}>
+    <div style={{ height }} className="overflow-hidden rounded-card border border-[#cfc8b8] relative shadow-inner">
+      <MapContainer center={center} zoom={value?.lat != null ? 14 : 12} scrollWheelZoom={true} style={{ height: "100%", width: "100%" }}>
         <TileLayer
           attribution='&copy; OpenStreetMap'
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
         <ClickCapture onPick={onChange} />
+        <RecenterMap value={value} />
         {value?.lat != null && value?.lng != null && (
-          <Marker position={[value.lat, value.lng]} icon={pin} />
+          <Marker
+            draggable={true}
+            eventHandlers={eventHandlers}
+            position={[value.lat, value.lng]}
+            icon={pin}
+            ref={markerRef}
+          />
         )}
       </MapContainer>
     </div>

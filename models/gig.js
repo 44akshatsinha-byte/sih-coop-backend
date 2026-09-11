@@ -18,6 +18,70 @@ const GigSchema = new mongoose.Schema({
     required: true,
     min: 1
   },
+  baseAmount: {
+    type: Number,
+    default: 0,
+    min: 0
+  },
+  emergencyFee: {
+    type: Number,
+    default: 0,
+    min: 0
+  },
+  materialCost: {
+    type: Number,
+    default: 0,
+    min: 0
+  },
+  materials: [{
+    name: { type: String, trim: true },
+    cost: { type: Number, default: 0, min: 0 }
+  }],
+  equipmentCost: {
+    type: Number,
+    default: 0,
+    min: 0
+  },
+  equipment: [{
+    name: { type: String, trim: true },
+    cost: { type: Number, default: 0, min: 0 }
+  }],
+  proposals: [{
+    worker: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      required: true
+    },
+    requestedAmount: {
+      type: Number,
+      required: true,
+      min: 1
+    },
+    note: {
+      type: String,
+      trim: true,
+      default: ""
+    },
+    equipmentCost: {
+      type: Number,
+      default: 0,
+      min: 0
+    },
+    equipmentDetails: {
+      type: String,
+      trim: true,
+      default: ""
+    },
+    status: {
+      type: String,
+      enum: ["pending", "accepted", "rejected"],
+      default: "pending"
+    },
+    createdAt: {
+      type: Date,
+      default: Date.now
+    }
+  }],
   status: {
     type: String,
     enum: ["pending", "accepted", "in-progress", "completed", "cancelled"],

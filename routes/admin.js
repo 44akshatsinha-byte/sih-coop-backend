@@ -24,7 +24,7 @@ router.get("/verification-queue", authMiddleware, requireRole("admin"), async (r
     const workers = await User.find({
       role: "worker",
       verificationStatus: "pending"
-    }).select("name email phone skills isVerified verificationStatus verificationNote latitude longitude rating ratingCount createdAt");
+    }).select("name email phone skills avatar isVerified verificationStatus verificationNote latitude longitude rating ratingCount createdAt");
 
     res.json({ success: true, count: workers.length, data: workers });
   } catch (error) {

@@ -209,11 +209,13 @@ function rankWorkers(booking, workers, limit = 5) {
       return {
         workerId: worker._id?.toString?.() || worker.id,
         name: worker.name,
+        avatar: worker.avatar || "",
         skills: worker.skills || [],
         phone: worker.phone || "",
         isVerified: Boolean(worker.isVerified),
         rating: worker.rating || 0,
         ratingCount: worker.ratingCount || 0,
+        completedJobs: worker.completedJobs || 0,
         isAvailable: Boolean(worker.isAvailable),
         latitude: worker.latitude,
         longitude: worker.longitude,

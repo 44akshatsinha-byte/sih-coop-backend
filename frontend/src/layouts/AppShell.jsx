@@ -23,7 +23,7 @@ const NAV = {
 
 export default function AppShell() {
   const { t } = useTranslation();
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
   const items = NAV[user?.role] || NAV.customer;
 
   return (
@@ -33,7 +33,38 @@ export default function AppShell() {
           <p className="text-base font-semibold">{t("app.name")}</p>
           <p className="text-xs text-slate-muted">{t("app.tagline")}</p>
         </div>
-        <LanguageSwitcher />
+        <div className="flex items-center gap-2 sm:gap-3">
+          {user && (
+            <div className="hidden sm:flex items-center gap-2 rounded-card bg-[#e2dcce] px-2.5 py-1 text-xs">
+              {user.avatar ? (
+                <img src={user.avatar} alt={user.name} className="h-6 w-6 rounded-full object-cover border border-[#cfc8b8]" />
+              ) : (
+                <div className="flex h-6 w-6 items-center justify-center rounded-full bg-forest text-[11px] text-[#F3EFE6] font-semibold">
+                  {(user.name || "?").slice(0, 1).toUpperCase()}
+                </div>
+              )}
+              <span className="font-medium max-w-[120px] truncate">{user.name}</span>
+              <span className="rounded bg-[#d7e3dc] px-1.5 py-0.5 text-[10px] text-forest font-semibold uppercase">
+                {user.role}
+              </span>
+            </div>
+          )}
+          <LanguageSwitcher />
+          {user && (
+            <button
+              type="button"
+              onClick={logout}
+              title={t("auth.logout")}
+              aria-label={t("auth.logout")}
+              className="flex min-h-9 items-center gap-1.5 rounded-card border border-[#cfc8b8] bg-[#F3EFE6] px-3 py-1.5 text-xs font-medium text-[#8b3a3a] hover:bg-[#ebdada] hover:border-[#b88c8c] transition-colors shadow-sm"
+            >
+              <svg className="h-3.5 w-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+              </svg>
+              <span>{t("auth.logout")}</span>
+            </button>
+          )}
+        </div>
       </header>
 
       <div className="mx-auto flex max-w-5xl gap-4 px-4 py-4">
