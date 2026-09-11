@@ -196,177 +196,248 @@ export default function GigDetailPage() {
   };
 
   return (
-    <div className="space-y-4">
-      {/* Title & Emergency Banner */}
+    <div className="space-y-6">
+      {/* ── Title & Hero Emergency Banner ── */}
       <div
-        className={`rounded-panel border p-4 sm:p-5 space-y-3 ${
+        className={`relative overflow-hidden rounded-panel border p-5 md:p-6 transition-all shadow-md ${
           isEmergency
-            ? "border-red-400 bg-red-50/90 text-red-950 shadow-sm"
-            : "border-[#d9d2c3] bg-[#eee9dd]"
+            ? "border-red-400 bg-gradient-to-br from-red-50 via-rose-50 to-amber-50 ring-1 ring-red-300"
+            : "hero-gradient text-white"
         }`}
       >
-        <div className="flex flex-wrap items-start justify-between gap-2">
-          <div>
-            <div className="flex flex-wrap items-center gap-2">
-              <h1 className="text-xl font-semibold text-teal-ink">{gig.title}</h1>
-              {isEmergency && (
-                <span className="rounded-card bg-red-600 px-2.5 py-1 text-xs font-bold text-white shadow-xs animate-pulse">
-                  🚨 EMERGENCY PRIORITY
-                </span>
-              )}
+        <div className="orb h-36 w-36 bg-white/10 top-[-20px] right-[-10px]" />
+        <div className="orb h-24 w-24 bg-emerald-300/10 bottom-[-10px] left-12" />
+
+        <div className="relative z-10 space-y-3">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div className="space-y-1 max-w-xl">
+              <div className="flex flex-wrap items-center gap-2">
+                <h1 className={`text-xl md:text-2xl font-black ${isEmergency ? "text-red-950" : "text-white"}`}>
+                  {gig.title}
+                </h1>
+                {isEmergency && (
+                  <span className="flex items-center gap-1 rounded-full bg-red-600 px-3 py-0.5 text-xs font-black text-white shadow-sm animate-pulse">
+                    <span className="h-1.5 w-1.5 rounded-full bg-white animate-ping" />
+                    🚨 EMERGENCY PRIORITY
+                  </span>
+                )}
+              </div>
+              <p className={`text-xs md:text-sm leading-relaxed ${isEmergency ? "text-red-900/80" : "text-white/80"}`}>
+                {gig.description}
+              </p>
             </div>
-            <p className="mt-1 text-sm text-slate-muted">{gig.description}</p>
+
+            <div className={`text-right shrink-0 ${isEmergency ? "text-red-950" : "text-white"}`}>
+              <div className="text-2xl font-black">₹{gig.amount}</div>
+              <span className={`text-[10px] font-bold uppercase tracking-wider block ${isEmergency ? "text-red-800" : "text-emerald-200"}`}>
+                Total Invoice
+              </span>
+              <span
+                className={`inline-block mt-1 rounded-full px-3 py-0.5 text-[10px] font-black uppercase ${
+                  gig.status === "completed"
+                    ? "bg-emerald-500 text-white"
+                    : gig.status === "accepted" || gig.status === "in-progress"
+                    ? "bg-blue-500 text-white"
+                    : "bg-amber-400 text-amber-950"
+                }`}
+              >
+                ● {gig.status}
+              </span>
+            </div>
           </div>
 
-          <span
-            className={`rounded px-2.5 py-1 text-xs font-semibold uppercase ${
-              gig.status === "completed"
-                ? "bg-emerald-100 text-emerald-800"
-                : gig.status === "accepted" || gig.status === "in-progress"
-                ? "bg-blue-100 text-blue-800"
-                : "bg-amber-100 text-amber-800"
-            }`}
-          >
-            {gig.status}
-          </span>
-        </div>
-
-        {/* Location & Meta */}
-        <div className="flex flex-wrap items-center gap-3 text-xs text-slate-muted pt-1 border-t border-[#d9d2c3]/60">
-          <span className="capitalize font-medium text-teal-ink bg-[#d7e3dc] px-2 py-0.5 rounded">
-            {gig.category}
-          </span>
-          {gig.location && (
-            <span className="text-teal-ink font-medium">
-              📍 {gig.location}
+          {/* Location & Meta Chips */}
+          <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-black/10 text-xs">
+            <span className={`rounded-full px-2.5 py-0.5 font-bold capitalize flex items-center gap-1 ${
+              isEmergency ? "bg-red-100 text-red-900" : "bg-white/15 text-white"
+            }`}>
+              🏷️ {gig.category}
             </span>
-          )}
+            {gig.location && (
+              <span className={`rounded-full px-2.5 py-0.5 font-medium flex items-center gap-1 truncate max-w-sm ${
+                isEmergency ? "bg-red-100 text-red-900" : "bg-white/15 text-white/90"
+              }`}>
+                📍 {gig.location}
+              </span>
+            )}
+            <span className={`rounded-full px-2.5 py-0.5 font-medium ${
+              isEmergency ? "bg-red-100 text-red-900" : "bg-white/15 text-white/90"
+            }`}>
+              📅 {new Date(gig.createdAt).toLocaleDateString()}
+            </span>
+          </div>
         </div>
       </div>
 
-      {/* Assigned Worker Profile Card */}
+      {/* ── Assigned Worker Profile Card ── */}
       {gig.workerDetails && (
-        <div className="rounded-panel border border-[#d9d2c3] bg-[#eee9dd] p-4 space-y-2">
-          <h2 className="text-xs font-semibold uppercase tracking-wider text-forest">
-            Assigned Service Professional
-          </h2>
-          <div className="flex flex-wrap items-center gap-3 pt-1">
+        <div className="card-hover rounded-panel border border-[#cfc8b8] bg-[#eee9dd] p-4 md:p-5 space-y-3 shadow-xs">
+          <div className="flex items-center justify-between">
+            <h2 className="text-xs font-bold uppercase tracking-wider text-forest flex items-center gap-1.5">
+              <span>👷</span>
+              <span>Assigned Service Professional</span>
+            </h2>
+            <span className="rounded-full bg-emerald-100 text-emerald-800 px-2 py-0.5 text-[10px] font-bold">
+              Active Assignment
+            </span>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-4 pt-1">
             {gig.workerDetails.avatar ? (
               <img
                 src={gig.workerDetails.avatar}
                 alt={gig.workerDetails.name}
-                className="h-12 w-12 rounded-full object-cover border border-[#cfc8b8]"
+                className="h-16 w-16 rounded-full object-cover border-2 border-forest shadow-xs"
               />
             ) : (
-              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[#d7e3dc] text-forest font-bold">
+              <div className="flex h-16 w-16 items-center justify-center rounded-full bg-[#d7e3dc] text-forest font-black text-xl shadow-xs">
                 {(gig.workerDetails.name || "?").slice(0, 1).toUpperCase()}
               </div>
             )}
-            <div className="space-y-0.5">
-              <div className="flex items-center gap-2">
-                <span className="font-semibold text-sm text-teal-ink">{gig.workerDetails.name}</span>
+            <div className="space-y-1">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="font-bold text-base text-teal-ink">{gig.workerDetails.name}</span>
                 {gig.workerDetails.isVerified && (
-                  <span className="rounded bg-emerald-100 text-emerald-800 px-1.5 py-0.2 text-[10px] font-semibold">
-                    ✓ Verified
+                  <span className="rounded-full bg-emerald-100 text-emerald-800 px-2 py-0.5 text-[10px] font-bold">
+                    ✓ Verified Pro
                   </span>
                 )}
               </div>
               <div className="flex flex-wrap items-center gap-2 text-xs">
-                <span className="font-semibold text-forest">
+                <span className="font-bold text-forest bg-[#d7e3dc] px-2.5 py-0.5 rounded-full">
                   🏆 {gig.workerDetails.completedJobs || 0} Successful Jobs
                 </span>
-                <span className="text-amber-900 font-medium">
+                <span className="font-bold text-amber-900 bg-amber-100 px-2.5 py-0.5 rounded-full">
                   ⭐ {gig.workerDetails.rating || 0}/5 ({gig.workerDetails.ratingCount || 0} reviews)
                 </span>
               </div>
               {gig.workerDetails.skills && gig.workerDetails.skills.length > 0 && (
-                <p className="text-[11px] text-slate-muted">
-                  Skills: {gig.workerDetails.skills.join(", ")}
-                </p>
+                <div className="flex flex-wrap gap-1 pt-0.5">
+                  {gig.workerDetails.skills.map((s, idx) => (
+                    <span key={idx} className="rounded-full bg-white border border-[#cfc8b8] px-2 py-0.5 text-[10px] text-teal-ink font-medium capitalize">
+                      {s}
+                    </span>
+                  ))}
+                </div>
               )}
             </div>
           </div>
         </div>
       )}
 
-      {/* Task Photos Gallery */}
+      {/* ── Task Photos Gallery ── */}
       {gig.images && gig.images.length > 0 && (
-        <div className="space-y-2 rounded-panel border border-[#d9d2c3] bg-[#eee9dd] p-4">
-          <p className="text-xs font-semibold uppercase tracking-wider text-forest">
-            Task Photos ({gig.images.length})
+        <div className="space-y-2.5 rounded-panel border border-[#d9d2c3] bg-[#eee9dd] p-4 md:p-5 shadow-xs">
+          <p className="text-xs font-bold uppercase tracking-wider text-forest flex items-center gap-1.5">
+            <span>📷</span>
+            <span>Task Photos & Site Images ({gig.images.length})</span>
           </p>
-          <div className="flex flex-wrap gap-2.5 pt-1">
+          <div className="flex flex-wrap gap-3 pt-1">
             {gig.images.map((imgUrl, i) => (
               <a
                 key={i}
                 href={imgUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="block h-20 w-20 overflow-hidden rounded-card border border-[#cfc8b8] shadow-sm hover:opacity-90"
+                className="group relative block h-24 w-24 overflow-hidden rounded-card border border-[#cfc8b8] shadow-sm hover:scale-105 transition-transform"
               >
-                <img src={imgUrl} alt={`Gig task photo ${i + 1}`} className="h-full w-full object-cover" />
+                <img src={imgUrl} alt={`Gig task photo ${i + 1}`} className="h-full w-full object-cover group-hover:opacity-90" />
+                <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 flex items-center justify-center text-white text-xs font-bold transition-opacity">
+                  🔍 View
+                </div>
               </a>
             ))}
           </div>
         </div>
       )}
 
-      {/* Pricing & Cooperative Breakdown Card */}
-      <div className="rounded-panel border border-[#d9d2c3] bg-[#eee9dd] p-4 space-y-2.5">
-        <h2 className="text-xs font-semibold uppercase tracking-wider text-forest">
-          Invoice & Payment Breakdown
-        </h2>
+      {/* ── Visual Interactive 85/15 Cooperative Financial Breakdown ── */}
+      <div className="rounded-panel border border-[#d9d2c3] bg-white p-5 space-y-4 shadow-sm">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div>
+            <h2 className="text-xs md:text-sm font-black uppercase tracking-wider text-teal-ink flex items-center gap-1.5">
+              <span>📊</span>
+              <span>Transparent Cooperative Financial Split (85/15 Model)</span>
+            </h2>
+            <p className="text-xs text-slate-muted mt-0.5">
+              Workers keep 85% of labor pay + 100% direct parts/tools reimbursements. 15% funds community safety nets.
+            </p>
+          </div>
+          <span className="text-xs font-bold text-forest bg-forest/10 px-2.5 py-1 rounded-full">
+            Government Fair Pay Compliant
+          </span>
+        </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 pt-1 text-xs">
-          <div className="rounded-card bg-page border border-[#cfc8b8] p-2.5">
-            <span className="text-slate-muted block">Base Service</span>
-            <span className="font-semibold text-sm text-teal-ink">₹{baseService}</span>
+        {/* Itemized Cost Cards Grid */}
+        <div className="grid grid-cols-2 sm:grid-cols-5 gap-2.5 pt-1 text-xs">
+          <div className="rounded-card bg-page border border-[#cfc8b8] p-3 text-center sm:text-left">
+            <span className="text-slate-muted block text-[11px] font-semibold">Base Labor</span>
+            <span className="font-extrabold text-base text-teal-ink">₹{baseService}</span>
           </div>
 
           {isEmergency && (
-            <div className="rounded-card bg-red-100 border border-red-300 p-2.5">
-              <span className="text-red-900 block font-medium">Emergency Surge</span>
-              <span className="font-bold text-sm text-red-950">+₹{emergencyFee}</span>
+            <div className="rounded-card bg-red-50 border border-red-200 p-3 text-center sm:text-left">
+              <span className="text-red-900 block text-[11px] font-bold">Emergency Surge</span>
+              <span className="font-extrabold text-base text-red-950">+₹{emergencyFee}</span>
             </div>
           )}
 
-          <div className="rounded-card bg-page border border-[#cfc8b8] p-2.5">
-            <span className="text-slate-muted block">Parts & Materials</span>
-            <span className="font-semibold text-sm text-amber-900">+₹{materialCost}</span>
+          <div className="rounded-card bg-amber-50/70 border border-amber-200 p-3 text-center sm:text-left">
+            <span className="text-amber-900 block text-[11px] font-bold">📦 Materials (100%)</span>
+            <span className="font-extrabold text-base text-amber-950">+₹{materialCost}</span>
           </div>
 
-          <div className="rounded-card bg-page border border-[#cfc8b8] p-2.5">
-            <span className="text-slate-muted block">Tools & Equipment</span>
-            <span className="font-semibold text-sm text-blue-900">+₹{equipmentCost}</span>
+          <div className="rounded-card bg-blue-50/70 border border-blue-200 p-3 text-center sm:text-left">
+            <span className="text-blue-900 block text-[11px] font-bold">🛠️ Equipment (100%)</span>
+            <span className="font-extrabold text-base text-blue-950">+₹{equipmentCost}</span>
           </div>
 
-          <div className="rounded-card bg-forest/10 border border-forest/30 p-2.5 col-span-2 sm:col-span-1">
-            <span className="text-forest block font-medium">Total Gig Cost</span>
-            <span className="font-bold text-base text-forest">₹{gig.amount}</span>
+          <div className="rounded-card bg-gradient-to-br from-forest to-[#234d3b] text-white p-3 text-center sm:text-left col-span-2 sm:col-span-1 shadow-xs">
+            <span className="text-white/80 block text-[11px] font-semibold">Total Invoice</span>
+            <span className="font-black text-lg text-white">₹{gig.amount}</span>
           </div>
         </div>
 
-        {/* Worker Payout Highlight */}
-        <div className="mt-2 rounded-card bg-[#d7e3dc] p-3 text-xs text-forest space-y-1">
-          <div className="flex justify-between items-center font-bold text-sm">
-            <span>👷 Worker Take-Home Payout:</span>
-            <span>₹{workerTotalTakeHome}</span>
+        {/* Visual Revenue Bar Infographic */}
+        <div className="rounded-card bg-slate-50 p-3.5 border border-slate-200 space-y-2">
+          <div className="flex justify-between items-center text-xs font-bold">
+            <span className="text-forest flex items-center gap-1">
+              <span className="h-2.5 w-2.5 rounded-full bg-emerald-600 inline-block" />
+              👷 Worker Take-Home: ₹{workerTotalTakeHome} ({Math.round((workerTotalTakeHome / (gig.amount || 1)) * 100)}%)
+            </span>
+            <span className="text-amber-800 flex items-center gap-1">
+              <span className="h-2.5 w-2.5 rounded-full bg-amber-500 inline-block" />
+              🛡️ Co-op Welfare Pool: ₹{Math.round((baseService + emergencyFee) * 0.15)}
+            </span>
           </div>
-          <p className="text-[11px] text-teal-ink">
-            • 85% Service Share (₹{workerServiceShare}) + 100% Direct Reimbursement (Materials: ₹{materialCost} + Equipment: ₹{equipmentCost})
-          </p>
-          <p className="text-[11px] text-slate-muted">
-            • 15% Cooperative Pool Community Benefit Fund (₹{Math.round((baseService + emergencyFee) * 0.15)})
-          </p>
+
+          <div className="h-3.5 w-full rounded-full bg-slate-200 overflow-hidden flex shadow-inner">
+            <div
+              className="h-full bg-gradient-to-r from-emerald-500 to-teal-600 transition-all duration-700"
+              style={{ width: `${Math.min(100, Math.round((workerTotalTakeHome / (gig.amount || 1)) * 100))}%` }}
+              title="Worker Take-Home Share"
+            />
+            <div
+              className="h-full bg-amber-400 transition-all duration-700"
+              style={{ width: `${Math.min(100, Math.round(((gig.amount * 0.15) / (gig.amount || 1)) * 100))}%` }}
+              title="Cooperative Welfare & Insurance Fund"
+            />
+          </div>
+
+          <div className="flex flex-wrap items-center justify-between text-[11px] text-slate-muted pt-1">
+            <span>• 85% Service Labor (₹{workerServiceShare}) + 100% Direct Parts & Tool Reimbursement (₹{directReimbursement})</span>
+            <span>• 15% Automatic Micro-Insurance & Artisan Pension Pool</span>
+          </div>
         </div>
       </div>
 
-      {/* CUSTOMER VIEW: WORKER PROPOSALS & BIDS */}
+      {/* ── CUSTOMER VIEW: WORKER PROPOSALS & BIDS ── */}
       {isCustomer && gig.status === "pending" && pendingProposals.length > 0 && (
-        <div className="space-y-3 rounded-panel border-2 border-purple-400 bg-purple-50/90 p-4 shadow-sm">
+        <div className="space-y-3 rounded-panel border-2 border-purple-400 bg-purple-50/90 p-5 shadow-sm">
           <div className="flex items-center justify-between">
-            <h2 className="text-sm font-bold text-purple-950">
-              💼 Received Custom Rate Proposals ({pendingProposals.length})
+            <h2 className="text-sm font-black text-purple-950 uppercase tracking-wide flex items-center gap-2">
+              <span>💼</span>
+              <span>Received Custom Rate Proposals ({pendingProposals.length})</span>
             </h2>
           </div>
 
@@ -382,18 +453,18 @@ export default function GigDetailPage() {
               return (
                 <div
                   key={p._id}
-                  className="rounded-card border border-purple-200 bg-white p-3.5 shadow-xs space-y-2"
+                  className="card-hover glow-border-purple rounded-card border border-purple-200 bg-white p-4 shadow-xs space-y-3"
                 >
-                  <div className="flex flex-wrap items-start justify-between gap-2">
-                    <div className="flex items-start gap-2.5">
+                  <div className="flex flex-wrap items-start justify-between gap-3">
+                    <div className="flex items-start gap-3">
                       {worker.avatar ? (
                         <img
                           src={worker.avatar}
                           alt={worker.name}
-                          className="h-11 w-11 rounded-full object-cover border border-purple-300"
+                          className="h-12 w-12 rounded-full object-cover border-2 border-purple-400"
                         />
                       ) : (
-                        <div className="flex h-11 w-11 items-center justify-center rounded-full bg-purple-200 text-purple-900 font-bold">
+                        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-purple-200 text-purple-900 font-bold text-base">
                           {(worker.name || "?").slice(0, 1).toUpperCase()}
                         </div>
                       )}
@@ -401,34 +472,34 @@ export default function GigDetailPage() {
                         <div className="flex items-center gap-1.5">
                           <span className="font-bold text-sm text-teal-ink">{worker.name}</span>
                           {worker.isVerified && (
-                            <span className="rounded bg-emerald-100 text-emerald-800 px-1 py-0.2 text-[10px] font-semibold">
+                            <span className="rounded-full bg-emerald-100 text-emerald-800 px-2 py-0.2 text-[10px] font-bold">
                               ✓ Verified Pro
                             </span>
                           )}
                         </div>
-                        <div className="flex flex-wrap items-center gap-2 text-xs">
-                          <span className="font-semibold text-forest">🏆 {worker.completedJobs || 0} Jobs</span>
-                          <span className="text-amber-900 font-medium">⭐ {worker.rating || 0}/5 ({worker.ratingCount || 0})</span>
+                        <div className="flex flex-wrap items-center gap-2 text-xs pt-0.5">
+                          <span className="font-bold text-forest bg-[#d7e3dc] px-2 py-0.5 rounded-full">🏆 {worker.completedJobs || 0} Jobs</span>
+                          <span className="font-bold text-amber-900 bg-amber-100 px-2 py-0.5 rounded-full">⭐ {worker.rating || 0}/5 ({worker.ratingCount || 0})</span>
                         </div>
                       </div>
                     </div>
 
-                    <div className="text-right">
-                      <div className="text-base font-extrabold text-purple-900">₹{pTotal}</div>
-                      <span className="text-[10px] text-slate-muted">Proposed Total</span>
+                    <div className="text-right shrink-0">
+                      <div className="text-lg font-black text-purple-950">₹{pTotal}</div>
+                      <span className="text-[10px] font-semibold text-slate-muted uppercase">Proposed Total</span>
                     </div>
                   </div>
 
                   {p.note && (
-                    <p className="text-xs text-purple-950 bg-purple-50 p-2 rounded border border-purple-100 italic">
+                    <p className="text-xs text-purple-950 bg-purple-50 p-2.5 rounded-card border border-purple-100 italic leading-relaxed">
                       "{p.note}"
                     </p>
                   )}
 
                   {pEqCost > 0 && (
-                    <div className="text-xs text-blue-900 bg-blue-50 p-1.5 rounded flex justify-between">
-                      <span>🛠️ Equipment: {p.equipmentDetails || "Tools"}</span>
-                      <span className="font-bold">+₹{pEqCost}</span>
+                    <div className="text-xs text-blue-950 bg-blue-50 p-2 rounded-card border border-blue-200 flex justify-between">
+                      <span>🛠️ Specialized Tools / Equipment: {p.equipmentDetails || "Tools"}</span>
+                      <span className="font-bold text-blue-900">+₹{pEqCost}</span>
                     </div>
                   )}
 
@@ -436,7 +507,7 @@ export default function GigDetailPage() {
                     <button
                       disabled={acceptingPropId === p._id}
                       onClick={() => handleAcceptProposal(p._id)}
-                      className="rounded-card bg-purple-700 px-4 py-1.5 text-xs font-bold text-white shadow hover:bg-purple-800 transition-colors"
+                      className="btn-press rounded-card bg-gradient-to-r from-purple-700 to-indigo-700 px-4 py-2 text-xs font-bold text-white shadow hover:from-purple-800 hover:to-indigo-800 transition-all"
                     >
                       {acceptingPropId === p._id ? "Booking..." : "✓ Accept & Book Worker"}
                     </button>
@@ -708,10 +779,10 @@ export default function GigDetailPage() {
       {error && <p className="text-sm text-red-800 font-medium bg-red-100 p-3 rounded-card">{error}</p>}
 
       {/* Action Buttons */}
-      <div className="flex flex-wrap gap-2 pt-2">
+      <div className="flex flex-wrap gap-2.5 pt-2">
         {isWorker && gig.status === "pending" && (
           <button
-            className="min-h-11 rounded-card bg-forest px-5 text-[#F3EFE6] font-medium shadow hover:bg-[#234d3b]"
+            className="btn-glow btn-press min-h-11 rounded-card bg-forest px-6 text-[#F3EFE6] font-bold shadow-md hover:bg-[#234d3b] transition-all"
             onClick={() => gigsApi.accept(id).then(load).catch((e) => setError(e.message))}
           >
             ✓ Accept Standard Gig Rate (₹{gig.amount})
@@ -720,7 +791,7 @@ export default function GigDetailPage() {
 
         {isWorker && isAssignedWorker && gig.status === "accepted" && (
           <button
-            className="min-h-11 rounded-card bg-forest px-5 text-[#F3EFE6] font-medium shadow hover:bg-[#234d3b]"
+            className="btn-glow btn-press min-h-11 rounded-card bg-forest px-6 text-[#F3EFE6] font-bold shadow-md hover:bg-[#234d3b] transition-all"
             onClick={() => gigsApi.start(id).then(load).catch((e) => setError(e.message))}
           >
             ▶ {t("gig.start")}
@@ -729,7 +800,7 @@ export default function GigDetailPage() {
 
         {(isWorker || isCustomer) && (gig.status === "accepted" || gig.status === "in-progress") && (
           <button
-            className="min-h-11 rounded-card border border-[#cfc8b8] bg-page px-5 text-sm font-medium hover:bg-[#d7e3dc]"
+            className="btn-press min-h-11 rounded-card border-2 border-forest bg-white px-6 text-sm font-bold text-forest hover:bg-forest hover:text-white shadow-sm transition-all"
             onClick={() => gigsApi.complete(id).then(load).catch((e) => setError(e.message))}
           >
             ✓ {t("gig.complete")}
@@ -738,7 +809,7 @@ export default function GigDetailPage() {
 
         {isCustomer && gig.status === "completed" && (
           <button
-            className="min-h-11 rounded-card bg-forest px-5 text-[#F3EFE6] font-medium shadow"
+            className="btn-glow btn-press min-h-11 rounded-card bg-gradient-to-r from-emerald-600 to-teal-700 px-6 text-[#F3EFE6] font-bold shadow-md hover:from-emerald-700 hover:to-teal-800 transition-all"
             onClick={() => setPayOpen(true)}
           >
             💳 {t("gig.pay")} (₹{gig.amount})
@@ -746,10 +817,10 @@ export default function GigDetailPage() {
         )}
       </div>
 
-      {/* CUSTOMER 5-STAR RATING & REVIEW SECTION */}
+      {/* ── CUSTOMER 5-STAR RATING & REVIEW SECTION ── */}
       {isCustomer && gig.status === "completed" && !gig.review?.rating && (
         <form
-          className="space-y-3 rounded-panel border-2 border-forest/30 bg-[#eee9dd] p-5 shadow-sm"
+          className="glow-border space-y-4 rounded-panel border-2 border-forest/30 bg-gradient-to-br from-[#eee9dd] to-[#e4ded0] p-6 shadow-md"
           onSubmit={(e) => {
             e.preventDefault();
             gigsApi.review(id, { rating: Number(rating), text })
@@ -761,14 +832,17 @@ export default function GigDetailPage() {
           }}
         >
           <div>
-            <h2 className="text-base font-bold text-teal-ink">⭐ Rate Your Service Professional</h2>
-            <p className="text-xs text-slate-muted">
-              Your feedback directly determines worker rankings and community trust score.
+            <div className="flex items-center gap-2">
+              <span className="text-xl">⭐</span>
+              <h2 className="text-base font-bold text-teal-ink">Rate Your Service Professional</h2>
+            </div>
+            <p className="text-xs text-slate-muted mt-0.5">
+              Your transparent feedback directly feeds into the TOPSIS algorithm and worker cooperative ranking.
             </p>
           </div>
 
           {/* Interactive Star Picker */}
-          <div className="space-y-1.5 pt-1">
+          <div className="space-y-2 pt-1">
             <div className="flex items-center gap-2">
               {[1, 2, 3, 4, 5].map((star) => (
                 <button
@@ -777,51 +851,53 @@ export default function GigDetailPage() {
                   onClick={() => setRating(star)}
                   onMouseEnter={() => setHoverRating(star)}
                   onMouseLeave={() => setHoverRating(0)}
-                  className="text-3xl transition-transform hover:scale-125 focus:outline-hidden"
+                  className="text-3xl sm:text-4xl transition-all duration-150 transform hover:scale-130 focus:outline-hidden"
                 >
                   {(hoverRating || rating) >= star ? "⭐" : "☆"}
                 </button>
               ))}
             </div>
-            <p className="text-xs font-bold text-forest">
+            <div className="inline-block rounded-full bg-forest/10 px-3 py-1 text-xs font-bold text-forest">
               {ratingDescriptions[hoverRating || rating]}
-            </p>
+            </div>
           </div>
 
           <label className="block text-xs">
             <span className="font-semibold text-teal-ink">Comments & Experience Feedback (optional)</span>
             <textarea
-              className="mt-1 min-h-20 w-full rounded-card border border-[#cfc8b8] bg-page px-3 py-2 text-xs"
+              className="mt-1 min-h-20 w-full rounded-card border border-[#cfc8b8] bg-white px-3 py-2 text-xs focus:border-forest focus:outline-hidden"
               placeholder="e.g. Prompt arrival, excellent craftsmanship, brought all necessary tools!"
               value={text}
               onChange={(e) => setText(e.target.value)}
             />
           </label>
 
-          <button className="min-h-11 rounded-card bg-forest px-5 text-xs font-bold text-[#F3EFE6] shadow hover:bg-[#234d3b]">
+          <button className="btn-press btn-glow min-h-11 rounded-card bg-forest px-6 text-xs font-bold text-[#F3EFE6] shadow-md hover:bg-[#234d3b] transition-all">
             ✓ Submit Rating & Update Worker Score
           </button>
         </form>
       )}
 
-      {/* Submitted Review Display */}
+      {/* ── Submitted Review Display ── */}
       {gig.review?.rating && (
-        <div className="space-y-2 rounded-panel border border-[#d9d2c3] bg-[#eee9dd] p-4">
+        <div className="card-hover space-y-2.5 rounded-panel border border-[#d9d2c3] bg-white p-5 shadow-xs">
           <div className="flex items-center justify-between">
-            <h2 className="text-xs font-semibold uppercase tracking-wider text-forest">
-              Customer Review & Feedback
+            <h2 className="text-xs font-bold uppercase tracking-wider text-forest flex items-center gap-1.5">
+              <span>⭐</span>
+              <span>Verified Customer Review</span>
             </h2>
-            <span className="font-bold text-amber-900 text-sm">
+            <span className="font-black text-amber-900 text-base bg-amber-50 px-2.5 py-0.5 rounded-full border border-amber-200">
               {"⭐".repeat(gig.review.rating)} ({gig.review.rating}/5)
             </span>
           </div>
           {gig.review.text && (
-            <p className="text-xs text-teal-ink italic bg-page p-2.5 rounded border border-[#cfc8b8]">
+            <p className="text-xs text-teal-ink italic bg-page p-3 rounded-card border border-[#cfc8b8] leading-relaxed">
               "{gig.review.text}"
             </p>
           )}
-          <p className="text-[11px] text-slate-muted">
-            Submitted on {new Date(gig.review.createdAt || gig.updatedAt).toLocaleDateString()} · Worker score dynamically updated
+          <p className="text-[11px] text-slate-muted flex items-center gap-1">
+            <span>✓ Submitted on {new Date(gig.review.createdAt || gig.updatedAt).toLocaleDateString()}</span>
+            <span>· Worker score updated in real-time</span>
           </p>
         </div>
       )}
@@ -836,3 +912,4 @@ export default function GigDetailPage() {
     </div>
   );
 }
+

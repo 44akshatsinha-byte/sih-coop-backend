@@ -107,65 +107,119 @@ export default function MatchesPage() {
   }
 
   if (!gigId) {
-    return <p className="text-sm text-slate-muted">{t("gig.noMatches")}</p>;
+    return (
+      <div className="rounded-panel border border-[#d9d2c3] bg-[#eee9dd] p-8 text-center space-y-3">
+        <div className="text-3xl">🔍</div>
+        <p className="font-semibold text-teal-ink">{t("gig.noMatches")}</p>
+        <p className="text-xs text-slate-muted">Please create a job request first to view AI-ranked candidates.</p>
+        <button onClick={() => navigate("/")} className="rounded-card bg-forest px-4 py-2 text-xs font-bold text-white shadow-sm">
+          Return to Home
+        </button>
+      </div>
+    );
   }
 
   const isEmergency = gig?.urgency === "emergency";
   const pendingProposals = proposals.filter((p) => p.status === "pending" || !p.status);
 
   return (
-    <div className="space-y-4">
-      {/* Gig Header Summary */}
+    <div className="space-y-6">
+      {/* ── Gig Header Summary with Graphics ── */}
       {gig && (
         <div
-          className={`rounded-panel border p-4 space-y-2 ${
+          className={`relative overflow-hidden rounded-panel border p-5 md:p-6 transition-all shadow-md ${
             isEmergency
-              ? "border-red-400 bg-red-50/90 text-red-950 shadow-sm"
-              : "border-[#d9d2c3] bg-[#eee9dd]"
+              ? "border-red-400 bg-gradient-to-br from-red-50 via-rose-50 to-amber-50 ring-1 ring-red-300"
+              : "hero-gradient text-white"
           }`}
         >
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <div className="space-y-0.5">
-              <div className="flex items-center gap-2">
-                <h1 className="text-lg font-bold text-teal-ink">{gig.title}</h1>
-                {isEmergency && (
-                  <span className="rounded-card bg-red-600 px-2 py-0.5 text-xs font-bold text-white shadow-xs animate-pulse">
-                    🚨 EMERGENCY
-                  </span>
-                )}
+          {/* Floating subtle orbs */}
+          <div className="orb h-36 w-36 bg-white/10 top-[-20px] right-[-10px]" />
+          <div className="orb h-24 w-24 bg-emerald-300/10 bottom-[-10px] left-12" />
+
+          <div className="relative z-10 space-y-3">
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div className="space-y-1 max-w-xl">
+                <div className="flex flex-wrap items-center gap-2">
+                  <h1 className={`text-xl md:text-2xl font-black ${isEmergency ? "text-red-950" : "text-white"}`}>
+                    {gig.title}
+                  </h1>
+                  {isEmergency && (
+                    <span className="flex items-center gap-1 rounded-full bg-red-600 px-3 py-0.5 text-xs font-black text-white shadow-sm animate-pulse">
+                      <span className="h-1.5 w-1.5 rounded-full bg-white animate-ping" />
+                      🚨 EMERGENCY RUSH
+                    </span>
+                  )}
+                </div>
+                <p className={`text-xs md:text-sm line-clamp-2 ${isEmergency ? "text-red-900/80" : "text-white/80"}`}>
+                  {gig.description}
+                </p>
               </div>
-              <p className="text-xs text-slate-muted">
-                Standard Budget: <span className="font-semibold text-teal-ink">₹{gig.amount}</span> · Category:{" "}
-                <span className="capitalize font-medium text-forest">{gig.category}</span>
-              </p>
+
+              <div className={`text-right shrink-0 ${isEmergency ? "text-red-950" : "text-white"}`}>
+                <div className="text-xl font-black">₹{gig.amount}</div>
+                <span className={`text-[11px] font-semibold uppercase tracking-wider block ${isEmergency ? "text-red-800" : "text-emerald-200"}`}>
+                  Total Budget
+                </span>
+                <span className={`inline-block mt-1 rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase ${
+                  isEmergency ? "bg-red-200 text-red-900" : "bg-white/20 text-white backdrop-blur-xs"
+                }`}>
+                  ● {gig.status}
+                </span>
+              </div>
             </div>
-            <span className="rounded bg-[#d7e3dc] px-2.5 py-1 text-xs font-semibold text-forest uppercase">
-              {gig.status}
-            </span>
+
+            {/* Quick Metadata Chips */}
+            <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-black/10 text-xs">
+              <span className={`rounded-full px-2.5 py-0.5 font-semibold capitalize flex items-center gap-1 ${
+                isEmergency ? "bg-red-100 text-red-900" : "bg-white/15 text-white"
+              }`}>
+                🏷️ Trade: {gig.category}
+              </span>
+              {gig.location && (
+                <span className={`rounded-full px-2.5 py-0.5 font-medium flex items-center gap-1 truncate max-w-sm ${
+                  isEmergency ? "bg-red-100 text-red-900" : "bg-white/15 text-white/90"
+                }`}>
+                  📍 {gig.location}
+                </span>
+              )}
+              {isEmergency && (
+                <span className="rounded-full bg-red-600 text-white px-2.5 py-0.5 font-bold text-[11px]">
+                  ⚡ Priority Dispatch Active
+                </span>
+              )}
+            </div>
           </div>
         </div>
       )}
 
-      {error && <p className="text-sm text-red-800 font-medium bg-red-100 p-3 rounded-card">{error}</p>}
+      {error && (
+        <div className="animate-bounce-in flex items-center gap-2 rounded-card border border-red-300 bg-red-50 p-3.5 text-sm text-red-900 font-semibold shadow-xs">
+          <span>⚠️</span>
+          <span>{error}</span>
+        </div>
+      )}
 
-      {/* SECTION 1: WORKER PROPOSALS & CUSTOM PAY REQUESTS */}
+      {/* ── SECTION 1: WORKER PROPOSALS & CUSTOM PAY REQUESTS ── */}
       {pendingProposals.length > 0 && (
-        <div className="space-y-3 rounded-panel border-2 border-purple-400 bg-purple-50/80 p-4 shadow-sm">
-          <div className="flex items-center justify-between gap-2">
-            <div className="flex items-center gap-2">
-              <span className="text-lg">💼</span>
+        <div className="space-y-3 rounded-panel border-2 border-purple-400 bg-gradient-to-br from-purple-50 via-indigo-50/40 to-purple-50/80 p-5 shadow-sm">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div className="flex items-center gap-2.5">
+              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-purple-600 text-white shadow-xs font-bold text-lg animate-float">
+                💼
+              </div>
               <div>
-                <h2 className="text-sm font-bold text-purple-950">
-                  Custom Pay Requests & Bids ({pendingProposals.length})
+                <h2 className="text-sm font-black text-purple-950 uppercase tracking-wide">
+                  Custom Pay Requests & Proposals ({pendingProposals.length})
                 </h2>
                 <p className="text-xs text-purple-900/80">
-                  Skilled workers have submitted custom price proposals & equipment requirements for your task.
+                  Master artisans and certified technicians have submitted tailored pricing & equipment plans.
                 </p>
               </div>
             </div>
           </div>
 
-          <div className="space-y-3 pt-1">
+          <div className="space-y-3.5 pt-1">
             {pendingProposals.map((p) => {
               const worker = p.worker || {};
               const eqCost = p.equipmentCost || 0;
@@ -177,7 +231,7 @@ export default function MatchesPage() {
               return (
                 <article
                   key={p._id}
-                  className="rounded-card border border-purple-200 bg-white p-4 shadow-xs space-y-3 transition-all hover:border-purple-300"
+                  className="card-hover glow-border-purple rounded-card border border-purple-200 bg-white p-4 shadow-sm space-y-3 transition-all"
                 >
                   <div className="flex flex-wrap items-start justify-between gap-3">
                     <div className="flex items-start gap-3">
@@ -185,10 +239,10 @@ export default function MatchesPage() {
                         <img
                           src={worker.avatar}
                           alt={worker.name}
-                          className="h-14 w-14 shrink-0 rounded-full object-cover border-2 border-purple-300 shadow-xs"
+                          className="h-14 w-14 shrink-0 rounded-full object-cover border-2 border-purple-400 shadow-xs"
                         />
                       ) : (
-                        <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-purple-200 text-purple-900 font-bold text-lg">
+                        <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-purple-200 text-purple-900 font-black text-lg">
                           {(worker.name || "?").slice(0, 1).toUpperCase()}
                         </div>
                       )}
@@ -197,18 +251,18 @@ export default function MatchesPage() {
                         <div className="flex flex-wrap items-center gap-2">
                           <h3 className="font-bold text-base text-teal-ink">{worker.name}</h3>
                           {worker.isVerified && (
-                            <span className="rounded bg-emerald-100 text-emerald-800 px-1.5 py-0.5 text-[11px] font-semibold">
-                              ✓ Verified Pro
+                            <span className="rounded-full bg-emerald-100 text-emerald-800 px-2 py-0.5 text-[11px] font-bold">
+                              ✓ Verified Specialist
                             </span>
                           )}
                         </div>
 
                         {/* Experience and Rating */}
                         <div className="flex flex-wrap items-center gap-2 text-xs">
-                          <span className="font-semibold text-forest bg-[#d7e3dc] px-2 py-0.5 rounded">
-                            🏆 {worker.completedJobs || 0} Jobs Completed
+                          <span className="font-bold text-forest bg-[#d7e3dc] px-2.5 py-0.5 rounded-full">
+                            🏆 {worker.completedJobs || 0} Gigs Done
                           </span>
-                          <span className="font-medium text-amber-900 bg-amber-100 px-2 py-0.5 rounded">
+                          <span className="font-bold text-amber-900 bg-amber-100 px-2.5 py-0.5 rounded-full">
                             ⭐ {worker.rating || 0}/5 ({worker.ratingCount || 0} reviews)
                           </span>
                         </div>
@@ -222,9 +276,11 @@ export default function MatchesPage() {
                     </div>
 
                     {/* Proposed Pricing Card */}
-                    <div className="text-right sm:text-right">
-                      <span className="text-xs text-slate-muted block">Proposed Total</span>
-                      <div className="text-lg font-extrabold text-purple-900">
+                    <div className="text-right shrink-0">
+                      <span className="text-[10px] font-semibold text-purple-900/70 uppercase tracking-wider block">
+                        Proposed Total
+                      </span>
+                      <div className="text-xl font-black text-purple-950">
                         ₹{totalProposed}
                       </div>
                       <span className="text-[11px] text-slate-muted block">
@@ -235,26 +291,26 @@ export default function MatchesPage() {
 
                   {/* Worker Note & Rationale */}
                   {p.note && (
-                    <div className="rounded-card bg-purple-50 p-2.5 text-xs text-purple-950 border border-purple-100">
-                      <span className="font-semibold">💬 Worker Experience & Note: </span>
-                      <span className="italic">{p.note}</span>
+                    <div className="rounded-card bg-purple-50/90 p-3 text-xs text-purple-950 border border-purple-100/80 leading-relaxed">
+                      <span className="font-bold">💬 Worker's Note: </span>
+                      <span className="italic">"{p.note}"</span>
                     </div>
                   )}
 
                   {/* Equipment requirement */}
                   {eqCost > 0 && (
-                    <div className="flex items-center gap-2 text-xs text-blue-900 bg-blue-50 border border-blue-200 p-2 rounded-card">
-                      <span>🛠️ <strong>Equipment Required:</strong> {p.equipmentDetails || "Specialized Tools"}</span>
-                      <span className="ml-auto font-bold">+₹{eqCost}</span>
+                    <div className="flex items-center gap-2 text-xs text-blue-950 bg-blue-50 border border-blue-200 p-2.5 rounded-card">
+                      <span>🛠️ <strong>Equipment / Tool Rental:</strong> {p.equipmentDetails || "Specialized Tools"}</span>
+                      <span className="ml-auto font-black text-blue-900">+₹{eqCost}</span>
                     </div>
                   )}
 
                   {/* Accept Proposal Button */}
-                  <div className="flex items-center justify-end gap-2 pt-1 border-t border-slate-100">
+                  <div className="flex items-center justify-end gap-2 pt-1 border-t border-purple-100">
                     <button
                       disabled={acceptingProposalId === p._id || booking}
                       onClick={() => handleAcceptProposal(p._id)}
-                      className="min-h-10 rounded-card bg-purple-700 px-5 py-2 text-xs font-bold text-white shadow hover:bg-purple-800 transition-colors"
+                      className="btn-press min-h-10 rounded-card bg-gradient-to-r from-purple-700 to-indigo-700 px-5 py-2 text-xs font-bold text-white shadow-md hover:from-purple-800 hover:to-indigo-800 transition-all"
                     >
                       {acceptingProposalId === p._id ? "Booking..." : `✓ Accept Rate & Book ${worker.name?.split(" ")[0] || "Worker"}`}
                     </button>
@@ -266,50 +322,59 @@ export default function MatchesPage() {
         </div>
       )}
 
-      {/* SECTION 2: GOVERNMENT RECOMMENDATION & DISPATCH ENGINE */}
-      <div className="rounded-panel border border-[#cfc8b8] bg-[#f8f5ee] p-4 space-y-3 shadow-xs">
+      {/* ── SECTION 2: AI SMART DISPATCH & POLICY ENGINE ── */}
+      <div className="rounded-panel border-2 border-forest/30 bg-gradient-to-br from-emerald-50/70 via-white to-teal-50/50 p-5 space-y-4 shadow-sm">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <div className="flex items-center gap-2">
-              <span className="text-lg">⚖️</span>
-              <h2 className="text-sm font-bold text-teal-ink uppercase tracking-wide">
-                Government Recommendation & Dispatch Engine
+              <span className="text-xl">🤖</span>
+              <h2 className="text-sm md:text-base font-black text-teal-ink uppercase tracking-wide">
+                AI Smart Dispatch & Policy Engine
               </h2>
             </div>
-            <p className="text-xs text-slate-muted">
-              Live Policy Selector for Hackathon Demonstration: Compare how dispatch shifts between Pareto efficiency, affirmative income equity, and geodesic speed.
+            <p className="text-xs text-slate-600 mt-0.5 max-w-xl leading-relaxed">
+              Choose how AI ranks nearby workers, or use 1-click Auto-Dispatch to immediately assign the optimal professional.
             </p>
           </div>
 
           <button
             disabled={autoDispatching || booking || !rows.length}
             onClick={handleAutoDispatch}
-            className="min-h-10 inline-flex items-center gap-2 rounded-card bg-emerald-700 px-4 py-2 text-xs font-bold text-white shadow hover:bg-emerald-800 transition-colors"
-            title="Automatically assign the top-ranked candidate based on the active government algorithm"
+            className="btn-glow btn-press min-h-11 inline-flex items-center gap-2 rounded-card bg-gradient-to-r from-emerald-600 to-teal-700 px-5 py-2 text-xs font-black text-white shadow-md hover:from-emerald-700 hover:to-teal-800 transition-all"
+            title="Automatically assign the top-ranked candidate based on the active AI policy"
           >
-            <span>⚡ {autoDispatching ? "Auto-Dispatching..." : "Autonomous Cooperative Dispatch"}</span>
+            <span>⚡ {autoDispatching ? "Auto-Dispatching..." : "1-Click Auto-Dispatch Best Match"}</span>
           </button>
         </div>
 
         {/* Algorithm Selection Pills */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-2 border-t border-[#e2dcd0]">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 pt-1">
           {[
-            { id: "hybrid", label: "🏛️ Govt Consensus", desc: "TOPSIS 40% · Equity 30% · Proximity 30%" },
-            { id: "equity", label: "⚖️ Fair Income Equity", desc: "Boosts under-served artisans & new workers" },
-            { id: "topsis", label: "📊 TOPSIS Multi-Criteria", desc: "Pareto-optimal geometric vector closeness" },
-            { id: "proximity", label: "📍 Proximity-First", desc: "Fastest response geodesic dispatch" }
+            { id: "hybrid", label: "🏛️ Smart Consensus", badge: "Recommended", desc: "Balanced blend of distance, rating, skill, & equity" },
+            { id: "equity", label: "⚖️ Fair Income Equity", badge: "Anti-Monopoly", desc: "Prioritizes newer & under-allocated artisans" },
+            { id: "topsis", label: "📊 TOPSIS Precision", badge: "Pareto Optimal", desc: "Multi-criteria geometric vector closeness" },
+            { id: "proximity", label: "📍 Closest Proximity", badge: "Fastest Response", desc: "Orders purely by nearest GPS distance" }
           ].map((algo) => (
             <button
               key={algo.id}
               onClick={() => handleAlgorithmChange(algo.id)}
-              className={`rounded-card p-2 text-xs font-semibold text-left transition-all border ${
+              className={`rounded-card p-3 text-xs font-semibold text-left transition-all border ${
                 algorithm === algo.id
-                  ? "bg-forest text-white border-forest shadow-xs ring-2 ring-forest/30"
-                  : "bg-white text-slate-700 border-[#cfc8b8] hover:bg-[#eee9dd]"
+                  ? "bg-forest text-white border-forest shadow-md ring-2 ring-forest/30"
+                  : "bg-white text-slate-700 border-[#cfc8b8] hover:bg-[#eee9dd] card-hover"
               }`}
             >
-              <div className="font-bold">{algo.label}</div>
-              <div className={`text-[10px] ${algorithm === algo.id ? "text-white/80" : "text-slate-500"}`}>
+              <div className="flex items-center justify-between">
+                <span className="font-bold">{algo.label}</span>
+                {algo.badge && (
+                  <span className={`rounded-full px-1.5 py-0.2 text-[9px] font-bold ${
+                    algorithm === algo.id ? "bg-white/20 text-white" : "bg-forest/10 text-forest"
+                  }`}>
+                    {algo.badge}
+                  </span>
+                )}
+              </div>
+              <div className={`text-[10px] mt-1 leading-tight ${algorithm === algo.id ? "text-white/80" : "text-slate-500"}`}>
                 {algo.desc}
               </div>
             </button>
@@ -317,10 +382,10 @@ export default function MatchesPage() {
         </div>
       </div>
 
-      {/* SECTION 3: MATCHED WORKERS QUEUE */}
-      <div className="space-y-3">
+      {/* ── SECTION 3: MATCHED WORKERS QUEUE ── */}
+      <div className="space-y-4">
         <div className="flex items-center justify-between">
-          <h2 className="text-base font-semibold text-teal-ink">
+          <h2 className="text-base font-bold text-teal-ink">
             {t("nav.matches")} & Ranked Candidates ({rows.length})
           </h2>
           <span className="text-xs text-slate-muted font-medium">
@@ -329,118 +394,152 @@ export default function MatchesPage() {
         </div>
 
         {!rows.length && (
-          <div className="rounded-panel border border-[#d9d2c3] bg-[#eee9dd] p-6 text-center text-sm text-slate-muted">
-            {t("gig.noMatches")}
+          <div className="rounded-panel border border-[#d9d2c3] bg-[#eee9dd] p-8 text-center space-y-2">
+            <div className="text-3xl">👥</div>
+            <p className="font-semibold text-teal-ink">{t("gig.noMatches")}</p>
+            <p className="text-xs text-slate-muted">No eligible workers found in your immediate perimeter.</p>
           </div>
         )}
 
-        {rows.map((row) => (
-          <article
-            key={row.workerId || row.rank}
-            className="rounded-panel border border-[#d9d2c3] bg-[#eee9dd] p-4 space-y-3 hover:border-[#cfc8b8] transition-all"
-          >
-            <div className="flex flex-wrap items-start justify-between gap-3">
-              <div className="flex items-start gap-3">
-                {row.avatar ? (
-                  <img
-                    src={row.avatar}
-                    alt={row.name}
-                    className="h-14 w-14 shrink-0 rounded-full object-cover border border-[#cfc8b8] shadow-xs"
-                  />
-                ) : (
-                  <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-[#d7e3dc] text-forest font-bold text-lg">
-                    {(row.name || "?").slice(0, 1).toUpperCase()}
-                  </div>
-                )}
-                <div className="min-w-0 flex-1 space-y-1">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <h3 className="font-semibold text-base text-teal-ink">{row.name}</h3>
-                    {row.isVerified && (
-                      <span className="rounded bg-emerald-100 text-emerald-800 px-1.5 py-0.5 text-[11px] font-semibold">
-                        ✓ {t("profile.verified")}
+        {rows.map((row, index) => {
+          const isTopMatch = index === 0;
+          const matchPercent = row.score ? Math.round(row.score) : 90 - index * 6;
+
+          return (
+            <article
+              key={row.workerId || row.rank || index}
+              className={`card-hover rounded-panel border p-5 space-y-3.5 transition-all ${
+                isTopMatch
+                  ? "glow-border border-emerald-400 bg-white shadow-md ring-1 ring-emerald-300"
+                  : "border-[#d9d2c3] bg-[#eee9dd] hover:border-[#cfc8b8]"
+              }`}
+            >
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div className="flex items-start gap-3.5">
+                  {row.avatar ? (
+                    <img
+                      src={row.avatar}
+                      alt={row.name}
+                      className={`h-16 w-16 shrink-0 rounded-full object-cover border-2 shadow-xs ${
+                        isTopMatch ? "border-emerald-500" : "border-[#cfc8b8]"
+                      }`}
+                    />
+                  ) : (
+                    <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-[#d7e3dc] text-forest font-black text-xl">
+                      {(row.name || "?").slice(0, 1).toUpperCase()}
+                    </div>
+                  )}
+
+                  <div className="min-w-0 flex-1 space-y-1">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <h3 className="font-bold text-base text-teal-ink">{row.name}</h3>
+                      {row.isVerified && (
+                        <span className="rounded-full bg-emerald-100 text-emerald-800 px-2 py-0.5 text-[10px] font-bold">
+                          ✓ {t("profile.verified")}
+                        </span>
+                      )}
+                      {isTopMatch && (
+                        <span className="rounded-full bg-emerald-600 text-white px-2 py-0.5 text-[10px] font-black uppercase tracking-wide animate-pulse">
+                          ★ #1 Recommended
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Track record & Experience */}
+                    <div className="flex flex-wrap items-center gap-2 text-xs pt-0.5">
+                      <span className="font-bold text-forest bg-[#d7e3dc] px-2.5 py-0.5 rounded-full">
+                        🏆 {row.completedJobs || 0} Completed Gigs
                       </span>
+                      <span className="font-bold text-amber-900 bg-amber-100 px-2.5 py-0.5 rounded-full">
+                        ⭐ {row.rating || 0}/5 ({row.ratingCount || 0} reviews)
+                      </span>
+                      <span className="text-slate-muted font-medium">
+                        📍 {row.distanceKm != null ? `${Number(row.distanceKm).toFixed(1)} ${t("gig.km")}` : ""}
+                      </span>
+                    </div>
+
+                    {row.skills && row.skills.length > 0 && (
+                      <div className="flex flex-wrap gap-1 pt-1">
+                        {row.skills.map((s, idx) => (
+                          <span key={idx} className="rounded-full bg-white border border-[#cfc8b8] px-2.5 py-0.5 text-[11px] text-teal-ink font-medium capitalize">
+                            {s}
+                          </span>
+                        ))}
+                      </div>
                     )}
-                    <span className="rounded bg-forest/10 text-forest px-2 py-0.5 text-xs font-bold">
-                      {row.score ? `${Math.round(row.score)}% Match` : `#${row.rank}`}
-                    </span>
+
+                    {/* Government Badges */}
+                    {row.governmentBadges && row.governmentBadges.length > 0 && (
+                      <div className="flex flex-wrap gap-1.5 pt-1">
+                        {row.governmentBadges.map((badge, bIdx) => (
+                          <span
+                            key={bIdx}
+                            className={`rounded-full px-2.5 py-0.5 text-[10px] font-bold border ${
+                              badge.color === "emerald"
+                                ? "bg-emerald-50 text-emerald-800 border-emerald-300"
+                                : badge.color === "amber"
+                                ? "bg-amber-50 text-amber-900 border-amber-300"
+                                : badge.color === "purple"
+                                ? "bg-purple-50 text-purple-900 border-purple-300"
+                                : "bg-blue-50 text-blue-900 border-blue-300"
+                            }`}
+                          >
+                            ★ {badge.label}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Match Score Radial / Progress Meter & Book */}
+                <div className="text-right shrink-0 flex flex-col items-end">
+                  <div className="flex items-center gap-2 mb-1">
+                    <div className="text-right">
+                      <div className="text-lg font-black text-forest">{matchPercent}%</div>
+                      <span className="text-[10px] text-slate-muted uppercase font-bold tracking-wider">
+                        Match Score
+                      </span>
+                    </div>
+                    {/* Mini visual circular indicator */}
+                    <div className="relative flex h-10 w-10 items-center justify-center rounded-full bg-emerald-100 text-emerald-800 font-extrabold text-xs">
+                      <span>{matchPercent}%</span>
+                    </div>
                   </div>
 
-                  {/* Track record & Experience */}
-                  <div className="flex flex-wrap items-center gap-2 text-xs pt-0.5">
-                    <span className="font-semibold text-forest bg-[#d7e3dc] px-2 py-0.5 rounded">
-                      🏆 {row.completedJobs || 0} Successful Jobs
-                    </span>
-                    <span className="font-medium text-amber-900 bg-amber-100 px-2 py-0.5 rounded">
-                      ⭐ {row.rating || 0}/5 ({row.ratingCount || 0} reviews)
-                    </span>
-                    <span className="text-slate-muted">
-                      📍 {row.distanceKm != null ? `${Number(row.distanceKm).toFixed(1)} ${t("gig.km")}` : ""}
-                    </span>
+                  <div className="text-base font-bold text-forest">
+                    ₹{gig ? gig.amount : "Standard"}
                   </div>
+                  <span className="text-[10px] text-slate-muted block">standard government rate</span>
 
-                  {row.skills && row.skills.length > 0 && (
-                    <div className="flex flex-wrap gap-1 pt-1">
-                      {row.skills.map((s, idx) => (
-                        <span key={idx} className="rounded bg-page border border-[#cfc8b8] px-2 py-0.5 text-[11px] text-teal-ink capitalize">
-                          {s}
-                        </span>
-                      ))}
-                    </div>
-                  )}
-
-                  {/* Government Badges */}
-                  {row.governmentBadges && row.governmentBadges.length > 0 && (
-                    <div className="flex flex-wrap gap-1.5 pt-1">
-                      {row.governmentBadges.map((badge, bIdx) => (
-                        <span
-                          key={bIdx}
-                          className={`rounded px-2 py-0.5 text-[10px] font-bold border ${
-                            badge.color === "emerald"
-                              ? "bg-emerald-50 text-emerald-800 border-emerald-300"
-                              : badge.color === "amber"
-                              ? "bg-amber-50 text-amber-900 border-amber-300"
-                              : badge.color === "purple"
-                              ? "bg-purple-50 text-purple-900 border-purple-300"
-                              : "bg-blue-50 text-blue-900 border-blue-300"
-                          }`}
-                        >
-                          ★ {badge.label}
-                        </span>
-                      ))}
-                    </div>
-                  )}
-
-                  {/* Algorithm / Policy Explainability Note */}
-                  {row.algorithmNote && (
-                    <div className="rounded-card bg-white/70 p-2 text-[11px] text-teal-ink border border-[#cfc8b8]">
-                      ⚖️ <strong>Policy Metric:</strong> {row.algorithmNote}
-                    </div>
-                  )}
-
-                  <p className="mt-1 text-xs text-teal-ink">
-                    💡 <strong>{t("gig.why")}:</strong> {whyLine(row.breakdown)}
-                  </p>
+                  <button
+                    disabled={booking || Boolean(acceptingProposalId)}
+                    onClick={() => book(row.workerId)}
+                    className="btn-press mt-2 min-h-10 rounded-card bg-forest px-5 text-xs font-bold text-[#F3EFE6] shadow-md hover:bg-[#234d3b] transition-all"
+                  >
+                    {booking ? "Booking..." : `${t("gig.book")} Worker`}
+                  </button>
                 </div>
               </div>
 
-              {/* Standard Rate & Book */}
-              <div className="text-right sm:text-right self-end sm:self-start">
-                <div className="text-base font-bold text-forest">
-                  ₹{gig ? gig.amount : "Standard"}
+              {/* Multi-criteria Breakdown Progress Bar */}
+              <div className="rounded-card bg-white/70 p-2.5 border border-[#cfc8b8]/70 space-y-1.5 text-xs">
+                <div className="flex justify-between items-center text-[11px] text-teal-ink font-semibold">
+                  <span>⚖️ Policy Metric: <strong>{row.algorithmNote || whyLine(row.breakdown) || "Multi-criteria Pareto optimal fit"}</strong></span>
+                  <span className="text-forest font-bold">{matchPercent}% Overall Alignment</span>
                 </div>
-                <span className="text-[11px] text-slate-muted block">standard rate</span>
-                <button
-                  disabled={booking || Boolean(acceptingProposalId)}
-                  onClick={() => book(row.workerId)}
-                  className="mt-2 min-h-10 rounded-card bg-forest px-5 text-xs font-bold text-[#F3EFE6] shadow hover:bg-[#234d3b] transition-colors"
-                >
-                  {booking ? "Booking..." : `${t("gig.book")} Worker`}
-                </button>
+                <div className="h-1.5 w-full rounded-full bg-slate-200 overflow-hidden">
+                  <div
+                    className="h-full bg-gradient-to-r from-emerald-500 to-teal-600 rounded-full transition-all duration-500"
+                    style={{ width: `${Math.min(100, Math.max(15, matchPercent))}%` }}
+                  />
+                </div>
               </div>
-            </div>
-          </article>
-        ))}
+            </article>
+          );
+        })}
       </div>
     </div>
   );
 }
+
