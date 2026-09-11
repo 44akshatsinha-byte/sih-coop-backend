@@ -1,27 +1,73 @@
 const jwt = require("jsonwebtoken");
+const User = require("../models/user");
 
-const authMiddleware = (req, res, next) => {
-  // 1. Check if the request has an Authorization header
-  const authHeader = req.header("Authorization");
-  if (!authHeader || !authHeader.startsWith("Bearer ")) {
-    return res.status(401).json({ message: "Access denied. No token provided." });
-  }
-
-  // 2. Extract the token (Remove the word "Bearer ")
-  const token = authHeader.split(" ")[1];
-
+const authMiddleware = async (req, res, next) => {
   try {
-    // 3. Verify the token using the EXACT same secret key from your login route
-    const decoded = jwt.verify(token, "super_secret_hackathon_key");
+    const authHeader = req.header("Authorization");
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+      return res.status(401).json({ 
+        success: false, 
+        message: "Access denied. No token provided." 
+      });
+    }
+
+    const token = authHeader.split(" ")[1];
+    const jwtSecret = process.env.JWT_SECRET || "super_secret_hackathon_key";
+
+    const decoded = jwt.verify(token, jwtSecret);
     
-    // 4. Attach the user's ID and role to the request so the next route can use it
-    req.user = decoded; 
+    const user = await User.findById(decoded.id).select("-password");
+    if (!user) {
+      return res.status(401).json({ 
+        success: false, 
+        message: "User no longer exists." 
+      });
+    }
+
+    req.user = {
+      id: user._id.toString(),
+      role: user.role,
+      email: user.email,
+      name: user.name
+    };
     
-    // 5. The "next()" function tells Express: "This guy is legit, let him through to the route!"
-    next(); 
+    next();
   } catch (error) {
-    res.status(401).json({ message: "Invalid or expired token." });
+    if (error.name === "TokenExpiredError") {
+      return res.status(401).json({ 
+        success: false, 
+        message: "Token expired. Please log in again." 
+      });
+    }
+    if (error.name === "JsonWebTokenError") {
+      return res.status(401).json({ 
+        success: false, 
+        message: "Invalid token." 
+      });
+    }
+    res.status(500).json({ 
+      success: false, 
+      message: "Authentication error." 
+    });
   }
 };
 
-module.exports = authMiddleware;
+const requireRole = (...allowedRoles) => {
+  return (req, res, next) => {
+    if (!req.user) {
+      return res.status(401).json({ 
+        success: false, 
+        message: "Authentication required." 
+      });
+    }
+    if (!allowedRoles.includes(req.user.role)) {
+      return res.status(403).json({ 
+        success: false, 
+        message: "Insufficient permissions." 
+      });
+    }
+    next();
+  };
+};
+
+module.exports = { authMiddleware, requireRole };

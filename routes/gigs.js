@@ -1,116 +1,502 @@
 const express = require("express");
 const router = express.Router();
-const authMiddleware = require("../middleware/authMiddleware");
+const Gig = require("../models/gig");
+const User = require("../models/user");
+const CooperativePool = require("../models/CooperativePool");
+const { authMiddleware, requireRole } = require("../middleware/authMiddleware");
 
-// Temporary in-memory storage for gigs
-const gigs = [
-  { id: 1, title: "Fix Leaking Sink", description: "Kitchen pipe is leaking", amount: 500, status: "pending" }
-];
-// POST: Create a new gig
-router.post("/", (req, res) => {
-  const { title, description, amount } = req.body;
+const COOPERATIVE_SPLIT = 0.15;
+const WORKER_SPLIT = 0.85;
 
-  // Fail-Fast Validation
-  if (!title || !description || !amount) {
-    return res.status(400).json({ message: "Please provide title, description, and amount." });
-  }
-
-  // Create the temporary gig
-  const newGig = {
-    id: gigs.length + 1,
-    title: title,
-    description: description,
-    amount: amount,
-    status: "pending"
-  };
-
-  gigs.push(newGig); // Save it to the array
-
-  res.status(201).json({
-    success: true,
-    message: "Gig successfully created",
-    data: newGig
-  });
-});
-// GET: Fetch available gigs (Tejas will use this for the dashboard)
-router.get("/", async (req, res) => {
+router.post("/", authMiddleware, requireRole("customer", "admin"), async (req, res) => {
   try {
-    // If the URL has ?status=pending, it filters the array. Otherwise, it shows all.
-    const statusFilter = req.query.status;
-    let availableGigs = gigs;
+    const { title, description, amount, category, location, estimatedDuration, images } = req.body;
 
-    if (statusFilter) {
-      availableGigs = gigs.filter(g => g.status === statusFilter);
+    if (!title || !description || !amount) {
+      return res.status(400).json({ 
+        success: false, 
+        message: "Title, description, and amount are required" 
+      });
     }
 
-    res.status(200).json({
+    if (amount < 1) {
+      return res.status(400).json({ 
+        success: false, 
+        message: "Amount must be greater than 0" 
+      });
+    }
+
+    const newGig = await Gig.create({
+      title: title.trim(),
+      description: description.trim(),
+      amount: Number(amount),
+      category: category?.trim() || "general",
+      location: location?.trim() || "",
+      estimatedDuration: estimatedDuration?.trim() || "",
+      images: Array.isArray(images) ? images.filter(Boolean) : [],
+      customer: req.user.id
+    });
+
+    const populatedGig = await Gig.findById(newGig._id)
+      .populate("customerDetails", "name email avatar")
+      .populate("workerDetails", "name email avatar");
+
+    res.status(201).json({
       success: true,
-      count: availableGigs.length,
-      data: availableGigs
+      message: "Gig created successfully",
+      data: populatedGig
     });
   } catch (error) {
-    res.status(500).json({ message: "Server Error", error: error.message });
+    if (error.name === "ValidationError") {
+      const messages = Object.values(error.errors).map(e => e.message);
+      return res.status(400).json({ 
+        success: false, 
+        message: messages.join(", ") 
+      });
+    }
+    res.status(500).json({ 
+      success: false, 
+      message: "Server error creating gig",
+      error: process.env.NODE_ENV === "development" ? error.message : undefined
+    });
   }
 });
-// PUT: Worker accepts a gig
-router.put("/:id/accept", (req, res) => {
-  const gigId = parseInt(req.params.id); // Grabs the ID from the URL
-  
-  // Find the exact gig in our temporary array
-  const gigIndex = gigs.findIndex(g => g.id === gigId);
 
-  // Fail-Fast: Check if the gig exists
-  if (gigIndex === -1) {
-    return res.status(404).json({ message: "Gig not found" });
+router.get("/", async (req, res) => {
+  try {
+    const { 
+      status, 
+      category, 
+      page = 1, 
+      limit = 20, 
+      sortBy = "createdAt", 
+      sortOrder = "desc",
+      minAmount,
+      maxAmount,
+      search
+    } = req.query;
+
+    const filter = {};
+    if (status) filter.status = status;
+    if (category) filter.category = category;
+    if (minAmount || maxAmount) {
+      filter.amount = {};
+      if (minAmount) filter.amount.$gte = Number(minAmount);
+      if (maxAmount) filter.amount.$lte = Number(maxAmount);
+    }
+    if (search) {
+      filter.$or = [
+        { title: { $regex: search, $options: "i" } },
+        { description: { $regex: search, $options: "i" } }
+      ];
+    }
+
+    const pageNum = Math.max(1, parseInt(page));
+    const limitNum = Math.min(100, Math.max(1, parseInt(limit)));
+    const skip = (pageNum - 1) * limitNum;
+
+    const sort = {};
+    sort[sortBy] = sortOrder === "asc" ? 1 : -1;
+
+    const [gigs, total] = await Promise.all([
+      Gig.find(filter)
+        .sort(sort)
+        .skip(skip)
+        .limit(limitNum)
+        .populate("customerDetails", "name email avatar")
+        .populate("workerDetails", "name email avatar"),
+      Gig.countDocuments(filter)
+    ]);
+
+    res.json({
+      success: true,
+      count: gigs.length,
+      total,
+      page: pageNum,
+      pages: Math.ceil(total / limitNum),
+      data: gigs
+    });
+  } catch (error) {
+    res.status(500).json({ 
+      success: false, 
+      message: "Server error fetching gigs",
+      error: process.env.NODE_ENV === "development" ? error.message : undefined
+    });
   }
-
-  // Fail-Fast: Ensure it isn't already taken
-  if (gigs[gigIndex].status !== "pending") {
-    return res.status(400).json({ message: "This gig is no longer available" });
-  }
-
-  // Update the status
-  gigs[gigIndex].status = "in-progress";
-
-  res.status(200).json({
-    success: true,
-    message: "Gig successfully accepted",
-    data: gigs[gigIndex]
-  });
 });
-// PUT: Complete a gig and split the payout
-router.put("/:id/complete", (req, res) => {
-  const gigId = parseInt(req.params.id);
-  const gigIndex = gigs.findIndex(g => g.id === gigId);
 
-  // Fail-Fast: Does the gig exist?
-  if (gigIndex === -1) {
-    return res.status(404).json({ message: "Gig not found" });
+router.get("/my-gigs", authMiddleware, async (req, res) => {
+  try {
+    const { role } = req.user;
+    const { status, page = 1, limit = 20 } = req.query;
+
+    const filter = {};
+    if (role === "customer") {
+      filter.customer = req.user.id;
+    } else if (role === "worker") {
+      filter.worker = req.user.id;
+    }
+    if (status) filter.status = status;
+
+    const pageNum = Math.max(1, parseInt(page));
+    const limitNum = Math.min(100, Math.max(1, parseInt(limit)));
+    const skip = (pageNum - 1) * limitNum;
+
+    const [gigs, total] = await Promise.all([
+      Gig.find(filter)
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limitNum)
+        .populate("customerDetails", "name email avatar")
+        .populate("workerDetails", "name email avatar"),
+      Gig.countDocuments(filter)
+    ]);
+
+    res.json({
+      success: true,
+      count: gigs.length,
+      total,
+      page: pageNum,
+      pages: Math.ceil(total / limitNum),
+      data: gigs
+    });
+  } catch (error) {
+    res.status(500).json({ 
+      success: false, 
+      message: "Server error fetching your gigs" 
+    });
   }
-
-  // Fail-Fast: Is it actually in progress?
-  if (gigs[gigIndex].status !== "in-progress") {
-    return res.status(400).json({ message: "Only in-progress gigs can be completed" });
-  }
-
-  // The Cooperative Financial Engine (5% platform pool, 95% worker)
-  const totalAmount = gigs[gigIndex].amount;
-  const poolContribution = totalAmount * 0.05; 
-  const workerPayout = totalAmount - poolContribution;
-
-  // Update the gig status
-  gigs[gigIndex].status = "completed";
-
-  res.status(200).json({
-    success: true,
-    message: "Gig completed and funds distributed",
-    payout_breakdown: {
-      total_charged: totalAmount,
-      worker_earnings: workerPayout,
-      cooperative_pool_contribution: poolContribution,
-      currency: "INR"
-    },
-    data: gigs[gigIndex]
-  });
 });
+
+router.get("/:id", async (req, res) => {
+  try {
+    const gig = await Gig.findById(req.params.id)
+      .populate("customerDetails", "name email phone avatar")
+      .populate("workerDetails", "name email phone avatar skills");
+
+    if (!gig) {
+      return res.status(404).json({ 
+        success: false, 
+        message: "Gig not found" 
+      });
+    }
+
+    res.json({ success: true, data: gig });
+  } catch (error) {
+    if (error.name === "CastError") {
+      return res.status(400).json({ 
+        success: false, 
+        message: "Invalid gig ID" 
+      });
+    }
+    res.status(500).json({ 
+      success: false, 
+      message: "Server error fetching gig" 
+    });
+  }
+});
+
+router.put("/:id", authMiddleware, async (req, res) => {
+  try {
+    const gig = await Gig.findById(req.params.id);
+    if (!gig) {
+      return res.status(404).json({ 
+        success: false, 
+        message: "Gig not found" 
+      });
+    }
+
+    if (gig.customer.toString() !== req.user.id && req.user.role !== "admin") {
+      return res.status(403).json({ 
+        success: false, 
+        message: "Not authorized to update this gig" 
+      });
+    }
+
+    if (!["pending", "accepted"].includes(gig.status)) {
+      return res.status(400).json({ 
+        success: false, 
+        message: "Cannot update gig in current status" 
+      });
+    }
+
+    const { title, description, amount, category, location, estimatedDuration, images } = req.body;
+
+    if (title) gig.title = title.trim();
+    if (description) gig.description = description.trim();
+    if (amount) gig.amount = Number(amount);
+    if (category) gig.category = category.trim();
+    if (location !== undefined) gig.location = location.trim();
+    if (estimatedDuration !== undefined) gig.estimatedDuration = estimatedDuration.trim();
+    if (Array.isArray(images)) gig.images = images.filter(Boolean);
+
+    await gig.save();
+
+    const updatedGig = await Gig.findById(gig._id)
+      .populate("customerDetails", "name email avatar")
+      .populate("workerDetails", "name email avatar");
+
+    res.json({ 
+      success: true, 
+      message: "Gig updated successfully", 
+      data: updatedGig 
+    });
+  } catch (error) {
+    if (error.name === "ValidationError") {
+      const messages = Object.values(error.errors).map(e => e.message);
+      return res.status(400).json({ 
+        success: false, 
+        message: messages.join(", ") 
+      });
+    }
+    if (error.name === "CastError") {
+      return res.status(400).json({ 
+        success: false, 
+        message: "Invalid gig ID" 
+      });
+    }
+    res.status(500).json({ 
+      success: false, 
+      message: "Server error updating gig" 
+    });
+  }
+});
+
+router.put("/:id/accept", authMiddleware, requireRole("worker", "admin"), async (req, res) => {
+  try {
+    const gig = await Gig.findById(req.params.id);
+    if (!gig) {
+      return res.status(404).json({ 
+        success: false, 
+        message: "Gig not found" 
+      });
+    }
+
+    if (gig.status !== "pending") {
+      return res.status(400).json({ 
+        success: false, 
+        message: `Gig is not available (current status: ${gig.status})` 
+      });
+    }
+
+    if (gig.customer.toString() === req.user.id) {
+      return res.status(400).json({ 
+        success: false, 
+        message: "You cannot accept your own gig" 
+      });
+    }
+
+    gig.status = "accepted";
+    gig.worker = req.user.id;
+    await gig.save();
+
+    const updatedGig = await Gig.findById(gig._id)
+      .populate("customerDetails", "name email avatar")
+      .populate("workerDetails", "name email avatar skills");
+
+    res.json({ 
+      success: true, 
+      message: "Gig accepted successfully", 
+      data: updatedGig 
+    });
+  } catch (error) {
+    if (error.name === "CastError") {
+      return res.status(400).json({ 
+        success: false, 
+        message: "Invalid gig ID" 
+      });
+    }
+    res.status(500).json({ 
+      success: false, 
+      message: "Server error accepting gig" 
+    });
+  }
+});
+
+router.put("/:id/complete", authMiddleware, async (req, res) => {
+  const session = await Gig.startSession();
+  session.startTransaction();
+
+  try {
+    const gig = await Gig.findById(req.params.id).session(session);
+    if (!gig) {
+      await session.abortTransaction();
+      return res.status(404).json({ 
+        success: false, 
+        message: "Gig not found" 
+      });
+    }
+
+    const isCustomer = gig.customer.toString() === req.user.id;
+    const isWorker = gig.worker && gig.worker.toString() === req.user.id;
+    const isAdmin = req.user.role === "admin";
+
+    if (!isCustomer && !isWorker && !isAdmin) {
+      await session.abortTransaction();
+      return res.status(403).json({ 
+        success: false, 
+        message: "Not authorized to complete this gig" 
+      });
+    }
+
+    if (gig.status !== "accepted" && gig.status !== "in-progress") {
+      await session.abortTransaction();
+      return res.status(400).json({ 
+        success: false, 
+        message: `Only accepted/in-progress gigs can be completed (current: ${gig.status})` 
+      });
+    }
+
+    const totalAmount = gig.amount;
+    const cooperativeAmount = Math.round(totalAmount * COOPERATIVE_SPLIT * 100) / 100;
+    const workerAmount = Math.round(totalAmount * WORKER_SPLIT * 100) / 100;
+
+    if (gig.worker) {
+      await User.findByIdAndUpdate(
+        gig.worker,
+        { $inc: { balance: workerAmount } },
+        { session }
+      );
+    }
+
+    let pool = await CooperativePool.findOne().session(session);
+    if (!pool) {
+      pool = await CooperativePool.create([{
+        totalBalance: cooperativeAmount,
+        transactions: [{
+          gigId: gig._id,
+          amount: cooperativeAmount,
+          type: "contribution",
+          description: `Cooperative contribution from gig: ${gig.title}`
+        }]
+      }], { session });
+      pool = pool[0];
+    } else {
+      pool.totalBalance += cooperativeAmount;
+      pool.transactions.push({
+        gigId: gig._id,
+        amount: cooperativeAmount,
+        type: "contribution",
+        description: `Cooperative contribution from gig: ${gig.title}`
+      });
+      await pool.save({ session });
+    }
+
+    gig.status = "completed";
+    gig.paymentStatus = "paid";
+    gig.completedAt = new Date();
+    await gig.save({ session });
+
+    await session.commitTransaction();
+
+    const completedGig = await Gig.findById(gig._id)
+      .populate("customerDetails", "name email avatar")
+      .populate("workerDetails", "name email avatar");
+
+    res.json({
+      success: true,
+      message: "Gig completed and payment distributed successfully!",
+      totalAmount,
+      workerAmount,
+      cooperativeAmount,
+      data: completedGig
+    });
+  } catch (error) {
+    await session.abortTransaction();
+    if (error.name === "CastError") {
+      return res.status(400).json({ 
+        success: false, 
+        message: "Invalid gig ID" 
+      });
+    }
+    res.status(500).json({ 
+      success: false, 
+      message: "Server error completing gig",
+      error: process.env.NODE_ENV === "development" ? error.message : undefined
+    });
+  } finally {
+    session.endSession();
+  }
+});
+
+router.put("/:id/cancel", authMiddleware, async (req, res) => {
+  try {
+    const { reason } = req.body;
+    const gig = await Gig.findById(req.params.id);
+    if (!gig) {
+      return res.status(404).json({ 
+        success: false, 
+        message: "Gig not found" 
+      });
+    }
+
+    const isCustomer = gig.customer.toString() === req.user.id;
+    const isAdmin = req.user.role === "admin";
+
+    if (!isCustomer && !isAdmin) {
+      return res.status(403).json({ 
+        success: false, 
+        message: "Not authorized to cancel this gig" 
+      });
+    }
+
+    if (!["pending", "accepted"].includes(gig.status)) {
+      return res.status(400).json({ 
+        success: false, 
+        message: `Cannot cancel gig in current status: ${gig.status}` 
+      });
+    }
+
+    gig.status = "cancelled";
+    gig.cancelledAt = new Date();
+    gig.cancellationReason = reason?.trim() || "Cancelled by user";
+    await gig.save();
+
+    res.json({ 
+      success: true, 
+      message: "Gig cancelled successfully", 
+      data: gig 
+    });
+  } catch (error) {
+    if (error.name === "CastError") {
+      return res.status(400).json({ 
+        success: false, 
+        message: "Invalid gig ID" 
+      });
+    }
+    res.status(500).json({ 
+      success: false, 
+      message: "Server error cancelling gig" 
+    });
+  }
+});
+
+router.delete("/:id", authMiddleware, requireRole("admin"), async (req, res) => {
+  try {
+    const gig = await Gig.findByIdAndDelete(req.params.id);
+    if (!gig) {
+      return res.status(404).json({ 
+        success: false, 
+        message: "Gig not found" 
+      });
+    }
+
+    res.json({ 
+      success: true, 
+      message: "Gig deleted successfully" 
+    });
+  } catch (error) {
+    if (error.name === "CastError") {
+      return res.status(400).json({ 
+        success: false, 
+        message: "Invalid gig ID" 
+      });
+    }
+    res.status(500).json({ 
+      success: false, 
+      message: "Server error deleting gig" 
+    });
+  }
+});
+
 module.exports = router;
